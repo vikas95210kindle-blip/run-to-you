@@ -195,7 +195,27 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
 .plist li.lead{background:#fff4d6;border-color:#ffc83d}
 .status.err{color:#b3261e}
 
+#tip{
+  position:fixed;z-index:3;left:calc(14px + env(safe-area-inset-left));right:calc(112px + env(safe-area-inset-right));bottom:calc(env(safe-area-inset-bottom) + 10px);
+  max-width:520px;margin:0 auto;opacity:0;transform:translateY(10px);transition:opacity .4s, transform .4s;pointer-events:none;
+  background:rgba(255,250,247,.95);border-radius:14px;padding:9px 14px;text-align:left;
+  box-shadow:0 0 0 2px #e4d2ff, 0 8px 22px rgba(80,30,120,.18);
+}
+#tip.show{opacity:1;transform:none}
+#tip .tl{display:block;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#7a3cc4}
+#tip .tt{display:block;font-size:14.5px;line-height:1.3;font-weight:700;color:var(--ink);margin-top:2px}
+.cgrid.mini{grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.cgrid.mini .cpick{padding:5px 2px;font-size:11px;border-radius:12px}
+.cgrid.mini .cpick canvas{width:28px;height:36px}
+.cpick[aria-pressed="true"]{border-color:var(--rose);background:#fff0f6}
+.tipbox .note{background:#f4edff}
+.tipbox .note .nlabel{color:#7a3cc4}
+.tipbox .note .ntext{font-size:23px}
+.made{margin:2px 0 0;font-size:13px;font-weight:800;color:var(--muted);text-align:center}
 @media (max-height:520px){
+  #tip{padding:5px 12px;bottom:calc(env(safe-area-inset-bottom) + 6px);max-width:none}
+  #tip .tl{display:inline;font-size:10.5px;margin-right:6px}
+  #tip .tt{display:inline;font-size:12.5px;line-height:1.25}
   #toast{padding:6px 12px;left:calc(110px + env(safe-area-inset-left));max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   #toast strong,#toast span{display:inline;font-size:13px}
   #toast span{margin:0 0 0 8px}
@@ -216,6 +236,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
 <p id="hint">Tap anywhere to jump · hold to jump higher</p>
 
 <div id="toast" role="status" aria-live="polite"><strong id="toastTitle"></strong><span id="toastText"></span></div>
+<div id="tip" role="status" aria-live="polite"><span class="tl" id="tipLabel"></span><span class="tt" id="tipText"></span></div>
 
 <div id="controls">
   <button id="btnSound" class="icon" type="button" aria-label="Turn sound off"></button>
@@ -226,26 +247,28 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
 
 <section id="ovStart" class="overlay show" aria-label="Start">
   <div class="card">
-    <p class="eyebrow">From Purest, with love</p>
+    <p class="eyebrow">Adventure with friends</p>
     <h2 class="title">Run to You</h2>
-    <div class="count"><span id="cMonths" class="big">0</span><span class="unit" id="cUnit">months</span></div>
-    <p id="cDays" class="days"></p>
+    <p class="days">Climb, bounce and race through five worlds. Play alone or with up to 4 friends.</p>
     <div class="chips" id="startChips"></div>
+    <p class="mhead"><span>Your runner</span></p>
+    <div id="startChars" class="cgrid mini" role="group" aria-label="Pick your runner"></div>
     <ul class="how" id="howList">
       <li><span class="ic">↑</span><span>Tap to jump. Hold to jump higher.</span></li>
-      <li><span class="ic">✿</span><span>Hop over cacti and gaps, jump onto ladders to climb, bounce on springs, and stomp grumpy puffs.</span></li>
-      <li><span class="ic">♥</span><span>Catch hearts in a row for combos. Love makes time fly.</span></li>
-      <li><span class="ic">✉</span><span id="howLetter">Run all the way to today. Someone is waiting for you there, with a letter.</span></li>
+      <li><span class="ic">✿</span><span>Jump onto ladders to climb, bounce on springs, ride lifts and stomp grumpy puffs.</span></li>
+      <li><span class="ic">★</span><span>Open treasure chests up high. Every 20 hearts fills your power bar.</span></li>
+      <li><span class="ic">♥</span><span>Clear a level to get a love tip for your partner.</span></li>
     </ul>
     <div id="startMissions"></div>
     <p id="startBest" class="best"></p>
-    <button id="btnStart" class="btn primary wide" type="button">Start running</button>
-    <button id="btnTogether" class="btn ghost wide" type="button">Play together</button>
+    <button id="btnTogether" class="btn primary wide" type="button">Play together</button>
+    <button id="btnStart" class="btn ghost wide" type="button">Play solo</button>
     <div class="row tight">
       <button class="btn ghost sub" type="button" data-open="missions">Missions</button>
       <button class="btn ghost sub" type="button" data-open="wardrobe">Wardrobe</button>
       <button class="btn ghost sub" type="button" data-open="memories">Memories</button>
     </div>
+    <p class="made">Made by Purest for Sunshine ♥</p>
   </div>
 </section>
 
@@ -289,6 +312,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
     <p id="coNew" class="badge" hidden>New team best!</p>
     <div class="chips" id="coChips"></div>
     <p id="coReach" class="best"></p>
+    <div id="coTip" class="tipbox"></div>
     <button id="btnCoopAgain" class="btn primary wide" type="button">Run again together</button>
     <p id="coWait" class="status" hidden></p>
     <button id="btnCoopLeave" class="btn ghost small" type="button">Leave room</button>
@@ -307,6 +331,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
     <p id="oClose" class="best" hidden></p>
     <div class="chips" id="oChips"></div>
     <div class="journey"><div class="bar"><i id="oBar"></i></div><p id="oReach"></p></div>
+    <div id="oTip" class="tipbox"></div>
     <div id="oMissions"></div>
     <p id="oRank" class="best"></p>
     <button id="btnAgain" class="btn primary wide" type="button">Run again</button>
@@ -526,10 +551,10 @@ function progress(type, value) {
   m.done = true; m.progress = m.target;
   coins += MISSION_REWARD; saveCoins();
   sfx.month();
-  if (state === 'play') toast('Mission complete · +' + MISSION_REWARD + ' ♥', MT[type].text(m.target), 2600);
+  if (state === 'play') hudPop('MISSION +' + MISSION_REWARD + ' ♥', '#ff5c93');
   if (!daily.all && daily.missions.every(x => x.done)) {
     daily.all = true; coins += ALL_REWARD; saveCoins();
-    setTimeout(() => { if (state === 'play') toast('All 3 missions done · +' + ALL_REWARD + ' ♥', 'Purest left you a note. Open Missions to read it.', 3400); }, 2700);
+    setTimeout(() => { if (state === 'play') hudPop('ALL MISSIONS +' + ALL_REWARD + ' ♥', '#ffc83d'); }, 1500);
   }
   saveDaily();
 }
@@ -550,7 +575,7 @@ function streakAlive() {
 }
 
 /* ---------------- Ranks ---------------- */
-const RANKS = [[0, 'New crush'], [150, 'Sweetheart'], [350, 'Darling'], [600, 'Jaan'], [900, 'Soulmate'], [1300, 'Forever'], [2000, "Purest's whole world"]];
+const RANKS = [[0, 'Rookie'], [150, 'Explorer'], [350, 'Climber'], [600, 'Sky Runner'], [900, 'Star Chaser'], [1300, 'Legend'], [2000, 'Mythic']];
 function rankOf(s) { let i = 0; for (let k = 0; k < RANKS.length; k++) if (s >= RANKS[k][0]) i = k; return i; }
 function rankLine(s) {
   const i = rankOf(s), next = RANKS[i + 1];
@@ -765,7 +790,6 @@ const PU_INFO = {
   magnet: { title: 'Love magnet', text: 'Hearts cannot resist you for a while.' },
   double: { title: 'Double days', text: 'Time flies twice as fast. Every point counts double.' }
 };
-
 /* ---------------- Canvas & layout ---------------- */
 const $ = id => document.getElementById(id);
 const cv = $('game');
@@ -804,7 +828,6 @@ function buildScenery() {
   for (let i = 0; i < 60; i++) groundBits.push({ x: Math.random() * TILE, y: 9 + Math.floor(Math.random() * 9) * 3, w: Math.random() < 0.3 ? 9 : 3 });
   for (let i = 0; i < 7; i++) groundBits.push({ x: Math.random() * TILE, flower: true, c: Math.random() < 0.5 ? '#ff6fa3' : '#ffd35c' });
 }
-
 /* ---------------- Level themes, day / night palette ---------------- */
 const hex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
 const THEMES = [
@@ -832,9 +855,7 @@ function palette(n) {
   }
   return o;
 }
-const CYCLE = TOTAL_DAYS * 2 / 3;            // so the sky is fully night when she reaches today
-const nightness = () => (0.5 - 0.5 * Math.cos(2 * Math.PI * score / CYCLE)) * (themeTo === 4 ? 0.4 : 1);
-
+const nightness = () => (0.5 - 0.5 * Math.cos(2 * Math.PI * dist / 36000)) * (themeTo === 4 ? 0.4 : 1);
 /* ---------------- Sound ---------------- */
 let actx = null;
 function audio() {
@@ -883,7 +904,6 @@ function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch 
 const SOUND_ON = '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 7h3l5-4v14l-5-4H3z"/><path d="M14 6.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const SOUND_OFF = '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 7h3l5-4v14l-5-4H3z"/><path d="M14 7l4 6M18 7l-4 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 function paintSound() { $('btnSound').innerHTML = muted ? SOUND_OFF : SOUND_ON; $('btnSound').setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off'); }
-
 /* ---------------- World motion (a pure function of time, so every phone agrees) ---------------- */
 const SPEED0 = 340, ACC = 4.5, SPEED_MAX = 700, GRAV = 2600, JUMP_V = 900, CUT_V = 520, PTS_DIV = 42, STOMP_V = 640, SPRING_V = 1500;
 const T_MAX = (SPEED_MAX - SPEED0) / ACC;
@@ -892,7 +912,7 @@ const distAt = t => t <= 0 ? 0 : t <= T_MAX ? SPEED0 * t + 0.5 * ACC * t * t : D
 const speedAtTime = t => Math.min(SPEED_MAX, SPEED0 + ACC * Math.max(0, t));
 const speedAtDist = x => x >= D_MAX ? SPEED_MAX : Math.sqrt(SPEED0 * SPEED0 + 2 * ACC * Math.max(0, x));
 const LV_STARTS = [0, 6500, 15000, 26000, 39000];
-const LEVEL_NAMES = ['Meadow of Firsts', 'Monsoon Rooftops', 'Lantern Lanes', 'Winter Hills', 'Starlight Sky'];
+const LEVEL_NAMES = ['Sunny Meadow', 'Monsoon Rooftops', 'Lantern Lanes', 'Winter Hills', 'Starlight Sky'];
 const LEVEL_HINTS = ['Jump onto ladders to climb up high.', 'Climb to the rooftops. Mind the gaps between roofs.', 'Bounce on springs to reach the lantern road.', 'Ride the lifts across the icy gaps.', 'Springs, ladders and lifts. Reach the stars together.'];
 function levelIndexAt(x) {
   if (x >= 39000) return 4 + Math.floor((x - 39000) / 15000);
@@ -942,6 +962,79 @@ function runnerImg(char, pose, outfitId) {
   return s[pose === 'hurt' ? 'stand' : pose] || s.stand;
 }
 const SLOTS = [116, 64, 168, 12, 220];
+/* ---------------- Love tips: shown when a level is cleared, matched to the runner ---------------- */
+const GENDER = { sunshine: 'girl', purest: 'boy', mint: 'boy', sky: 'boy', mango: 'girl', coral: 'girl' };
+const TIPS = {
+  girl: [
+    'Tell him one specific thing he did today that you loved. Specific praise lands deeper than "you\'re sweet".',
+    'When he shares a problem, ask whether he wants advice or just someone to listen.',
+    'Notice the small things he does for you, and say thank you out loud.',
+    'Give him room for his own friends and hobbies. It makes your time together feel fresher.',
+    'If something bothers you, tell him clearly and kindly. He can\'t fix what he can\'t see.',
+    'Ask about his dreams, not just his day, and listen like the answer matters.',
+    'In a fight, talk about the problem, not about him. "I felt hurt when…" works better than "You always…".',
+    'Celebrate his wins, even the small ones at work.',
+    'Respect his family the way you want him to respect yours.',
+    'Keep one little ritual that belongs only to the two of you.',
+    'Trust grows in small moments. Keep the small promises.',
+    'Laugh together often. Shared jokes are the glue of a relationship.',
+    'If he goes quiet, check in gently instead of guessing what he is thinking.',
+    'Say sorry when you are wrong, and accept his sorry when he means it.',
+    'Tell him what makes you feel loved. He wants to get it right, so help him.'
+  ],
+  boy: [
+    'Listen to understand, not to fix. Sometimes she just wants to be heard.',
+    'Remember the little things she tells you, and bring them up later. It shows you were really listening.',
+    'Cheer for her goals and her work out loud. Make her feel her dreams matter to you.',
+    'Say "I\'m proud of you" when she does something hard.',
+    'Plan something small without being asked. Effort means more than money.',
+    'Ask how she feels, then wait for the real answer.',
+    'Never make fun of her in front of others. Have her back in every room.',
+    'Share the boring work too: plans, chores, reminders. Real partners carry things together.',
+    'When you are wrong, say sorry without adding a "but".',
+    'Be warm with her family and friends. They are part of her world.',
+    'Reply with care. A thoughtful message beats a quick "ok".',
+    'Respect her "no" and her boundaries, every time, without sulking.',
+    'Compliment her mind and her kindness, not only how she looks.',
+    'Be the same man in private and in public. Consistency builds trust.',
+    'Ask her what makes her feel loved, then do it often.'
+  ]
+};
+function nextTip(char) {
+  const g = GENDER[char] || 'girl', list = TIPS[g];
+  const k = 'tipIdx_' + g;
+  const i = (store.get(k, Math.floor(Math.random() * list.length)) + 1) % list.length;
+  store.set(k, i);
+  return { g, text: list[i] };
+}
+let tipTimer = 0;
+function showTip(char) {
+  const t = nextTip(char), el2 = $('tip');
+  $('tipLabel').textContent = t.g === 'girl' ? 'Love tip · for your boyfriend' : 'Love tip · for your girlfriend';
+  $('tipText').textContent = t.text;
+  el2.classList.add('show');
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(() => el2.classList.remove('show'), 7500);
+}
+function hideTip() { clearTimeout(tipTimer); $('tip').classList.remove('show'); }
+function fillTip(box, char) {
+  const t = nextTip(char);
+  box.innerHTML = '';
+  const n = el('div', 'note');
+  n.appendChild(el('p', 'nlabel', t.g === 'girl' ? 'Love tip · for your boyfriend' : 'Love tip · for your girlfriend'));
+  n.appendChild(el('p', 'ntext', t.text));
+  box.appendChild(n);
+}
+const CHEST = [
+  sprite(['..GGGGGGGG..', '.GBBBBBBBBG.', 'GBBBBBBBBBBG', 'GGGGGYYGGGGG', 'GBBBBYYBBBBG', 'GBBBBBBBBBBG', 'GBBBBBBBBBBG', 'GGGGGGGGGGGG'], { G: '#d29a2e', B: '#8a4b2a', Y: '#ffe08a' }, '#4a2a14'),
+  sprite(['.GGGGGGGGGG.', 'G..........G', 'GGGGGGGGGGGG', 'GYYYYYYYYYYG', 'GBBBBYYBBBBG', 'GBBBBBBBBBBG', 'GBBBBBBBBBBG', 'GGGGGGGGGGGG'], { G: '#d29a2e', B: '#8a4b2a', Y: '#ffe08a' }, '#4a2a14')
+];
+const TEAM_GOAL = 20, NO_PREDICT = !!store.get('noPredict', false);
+let chests = [], bestDist = +store.get('bestDist', 0) || 0, banner = null, pops = [], teamLevel = 0, chestsOpened = 0, passedBest = false;
+function hudPop(text, color) { pops.push({ text, color: color || '#ff5c93', age: 0, life: 1.8 }); if (pops.length > 3) pops.shift(); }
+function showBanner(title, sub) { banner = { title, sub, t: 0 }; }
+const foeXAt = (f, t) => f.wx0 + f.range * Math.sin(t * 1.5 + f.ph);
+
 
 /* ---------------- Game state ---------------- */
 let state = 'start', score = 0, speed = SPEED0, lives = 3, inv = 0, timer = 0, gt = 0, dist = 0, camY = 0;
@@ -974,10 +1067,11 @@ function reset() {
   myLastJumpGt = -99; lastSyncGt = -99; syncJumps = 0; climbs = 0; curLevel = 0;
   themeFrom = THEMEC[0]; themeTo = 0; themeK = 1;
   shieldOn = false; magnetT = 0; doubleT = 0; combo = 0; mult = 1; tagT = 0;
-  run = { hearts: 0, cacti: 0, clouds: 0, near: 0, maxMult: 1, coins: 0, golden: 0, power: 0, stomps: 0 };
+  run = { hearts: 0, cacti: 0, clouds: 0, near: 0, maxMult: 1, coins: 0, golden: 0, power: 0, stomps: 0, bestDist0: bestDist };
   bestAnnounced = best === 0; rankStart = rankOf(best);
   Object.assign(dino, { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0, climb: null });
   viki.mode = 'off'; viki.dy = 0; hist = []; meetT = 0;
+  banner = null; pops = []; teamLevel = 0; chestsOpened = 0; passedBest = false;
   resetCourse(Math.floor(Math.random() * 1e9));
 }
 
@@ -1014,7 +1108,7 @@ function makeFoe(cx, range, h) { return { id: ++foeSeq, wx0: cx - FOE[0].width /
 const foeX = f => f.wx0 + f.range * Math.sin(gt * 1.5 + f.ph);
 function resetCourse(seed) {
   crng = seeded('course-' + seed);
-  genX = 820; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = []; gates = []; ladders = []; springs = []; signs = [];
+  genX = 820; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = []; gates = []; ladders = []; springs = []; signs = []; chests = [];
   lastGateLvl = 0; foeSeq = 0; forceSeg = null;
 }
 const LEVEL_SIG = ['tower', 'tower', 'spring', 'lift', 'spring'];
@@ -1053,9 +1147,9 @@ function generateNext() {
   if (lvl > lastGateLvl) {
     lastGateLvl = lvl;
     gates.push({ wx: x + 80, lvl, passed: false });
-    hearts.push(makeHeart(x + 115, 150));
+    for (let k = 0; k < 9; k++) hearts.push(makeHeart(x + 180 + k * 48, 40 + Math.round(70 * Math.sin(k / 8 * Math.PI)), k === 4 ? 1 : 0));
     forceSeg = LEVEL_SIG[lvl % 5];
-    genX = x + 560;
+    genX = x + 760;
     return;
   }
   const seg = pickSeg(lvl, days);
@@ -1096,6 +1190,7 @@ function generateNext() {
       plats.push({ wx: rx, w, h: roofH, roof: true });
       for (let k = 0; k < Math.floor(w / 50); k++) hearts.push(makeHeart(rx + 30 + k * 50, roofH + 32, 0.18));
       if (lvl >= 2 && i > 0 && crng() < 0.5) foes.push(makeFoe(rx + w / 2, Math.min(w / 2 - 40, 60), roofH));
+      if (i === n - 1 && crng() < 0.6) chests.push({ wx: rx + w - 70, h: roofH, open: false });
       const g = i < n - 1 ? 70 + Math.floor(crng() * 3) * 20 : 0;
       rx += w + g; total = rx - x;
     }
@@ -1107,7 +1202,7 @@ function generateNext() {
     for (let i = 0; i < n; i++) {
       const w = 130 + Math.floor(crng() * 3) * 20;
       plats.push({ wx: px, w, h: ph });
-      hearts.push(makeHeart(px + w / 2, ph + 32, i === n - 1 ? 0.5 : 0.07));
+      if (i === n - 1) chests.push({ wx: px + w / 2 - 20, h: ph, open: false }); else hearts.push(makeHeart(px + w / 2, ph + 32));
       px += w + 30 + Math.floor(crng() * 3) * 15;
       ph = Math.min(ph + 58 + Math.floor(crng() * 2) * 8, 360);
     }
@@ -1123,6 +1218,7 @@ function generateNext() {
       const w = 200 + Math.floor(crng() * 4) * 40;
       plats.push({ wx: rx, w, h: skyH, sky: true });
       for (let k = 0; k < Math.floor(w / 46); k++) hearts.push(makeHeart(rx + 26 + k * 46, skyH + 32, 0.22));
+      if (i === n - 1 && crng() < 0.5) chests.push({ wx: rx + w - 60, h: skyH, open: false });
       rx += w + (i < n - 1 ? 70 + Math.floor(crng() * 3) * 20 : 0);
     }
     hearts.push(makeHeart(x + 120, 300)); hearts.push(makeHeart(x + 210, 360));
@@ -1168,6 +1264,7 @@ function pruneCourse() {
   const keep = o => o.wx + (o.w || 60) - dist > -60;
   obstacles = obstacles.filter(o => o.wx + o.w - dist > -40);
   plats = plats.filter(keep); pits = pits.filter(keep); ladders = ladders.filter(keep); springs = springs.filter(keep);
+  chests = chests.filter(c => c.wx + 60 - dist > -60);
   signs = signs.filter(s => s.wx + 200 - dist > -60);
   foes = foes.filter(f => !f.dead && f.wx0 + f.range + 60 - dist > -60);
   gates = gates.filter(g => g.wx + 140 - dist > -60);
@@ -1197,7 +1294,7 @@ function landingAt(fx0, fx1, prevDy, dy, t) {
   if (prevDy >= -0.01 && dy <= 0 && !overPit(fx0, fx1)) return 0;
   return null;
 }
-function stepBody(b, x, dt, local, wd, t) {
+function stepBody(b, x, dt, local, wd, t, predict) {
   if (b.respawnT > 0) { b.respawnT -= dt; b.vy = 0; b.ground = false; b.climb = null; if (b.respawnT > 0) return; }
   const fx0 = wd + x + 20, fx1 = wd + x + 46;
   if (b.climb) {
@@ -1227,6 +1324,18 @@ function stepBody(b, x, dt, local, wd, t) {
         break;
       }
     }
+  }
+  if (predict && b.ground && !NO_PREDICT) {
+    // a friend's jump is still on its way over the network: assume they hop what is right in front of them
+    const fx = fx1, reach = speedAtDist(wd) * 0.28;
+    let need = false;
+    if (Math.abs(b.dy) < 1) {
+      for (const o of obstacles) if (o.kind === 'cactus' && o.wx > fx - 4 && o.wx - fx < reach) { need = true; break; }
+      if (!need) for (const p of pits) if (p.wx > fx - 4 && p.wx - fx < reach * 0.6) { need = true; break; }
+      if (!need) for (const l of ladders) if (l.wx > fx - 4 && l.wx - fx < reach * 0.5) { need = true; break; }
+    }
+    if (!need) for (const f of foes) { if (f.dead || Math.abs(f.h - b.dy) > 2) continue; const fxw = foeXAt(f, t); if (fxw > fx - 10 && fxw - fx < reach) { need = true; break; } }
+    if (need) { b.vy = -JUMP_V; b.ground = false; }
   }
   if (b.buffer > 0) b.buffer -= dt;
   if (!b.ground) {
@@ -1279,7 +1388,6 @@ window.addEventListener('keydown', e => {
   } else if ((k === 'KeyP' || k === 'Escape') && state === 'play') pauseGame();
 });
 window.addEventListener('keyup', e => { if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') release(); });
-
 /* ---------------- Overlays ---------------- */
 const OVERLAYS = ['ovStart', 'ovOver', 'ovLetter', 'ovMem', 'ovMissions', 'ovWardrobe', 'ovPause', 'ovCoop', 'ovRoom', 'ovCoopOver'];
 const PANELS = { memories: 'ovMem', missions: 'ovMissions', wardrobe: 'ovWardrobe' };
@@ -1294,6 +1402,7 @@ function show(id) {
 }
 let toastTimer = 0;
 function toast(title, text, ms) {
+  if (state === 'play') return;   // no text boxes while running
   $('toastTitle').textContent = title; $('toastText').textContent = text;
   toastEl.classList.add('show');
   clearTimeout(toastTimer);
@@ -1325,12 +1434,8 @@ function renderMini(box) {
 
 function fillStart() {
   ensureDaily();
-  $('cMonths').textContent = MONTHS;
-  $('cUnit').textContent = MONTHS === 1 ? 'month' : 'months';
-  $('cDays').textContent = IS_ELEVENTH
-    ? 'Happy ' + MONTHS + '-month anniversary! ' + TOTAL_DAYS + ' days since ' + fmtLong(START) + '.'
-    : plural(MONTHS, 'month') + ' and ' + plural(EXTRA_DAYS, 'day') + ' since ' + fmtLong(START) + '.';
-  $('headSub').textContent = plural(MONTHS, 'month') + ' · ' + TOTAL_DAYS + ' days of us';
+  $('headSub').textContent = 'Adventure with friends';
+  paintStartChars();
   const chips = $('startChips'); chips.innerHTML = '';
   if (streakAlive()) chips.appendChild(chip('🔥 ' + plural(streak.count, 'day') + ' streak', 'hot'));
   chips.appendChild(chip('♥ ' + coins));
@@ -1339,8 +1444,25 @@ function fillStart() {
   $('howList').style.display = first ? '' : 'none';
   if (first) $('startMissions').innerHTML = ''; else renderMini($('startMissions'));
   $('startBest').textContent = best > 0
-    ? 'Your best: ' + best + ' · farthest run: ' + fmt(addDays(START, farthest))
-    : 'Your very first run. No pressure, my love.';
+    ? 'Your best: ' + best + (bestDist > 0 ? ' · farthest: ' + bestDist + ' m' : '')
+    : 'Your first adventure. Have fun!';
+}
+function paintStartChars() {
+  const grid = $('startChars'); grid.innerHTML = '';
+  CHAR_IDS.forEach(id => {
+    const b = el('button', 'cpick'); b.type = 'button';
+    b.setAttribute('aria-pressed', String(id === myChar));
+    b.setAttribute('aria-label', CHARS[id].label);
+    b.appendChild(previewCanvas(id));
+    b.appendChild(el('span', '', CHARS[id].label));
+    b.addEventListener('click', () => {
+      const wasDefault = !myName || CHAR_IDS.some(c => CHARS[c].label === myName);
+      myChar = id; store.set('char', myChar);
+      if (wasDefault) { myName = CHARS[id].label; store.set('name', myName); }
+      paintStartChars();
+    });
+    grid.appendChild(b);
+  });
 }
 
 function openLetter(mode) {
@@ -1367,7 +1489,7 @@ function openLetter(mode) {
 
 function renderMemories() {
   const list = $('memList'); list.innerHTML = '';
-  const letterOpen = farthest >= TOTAL_DAYS;
+  const letterOpen = true;
   const li = el('li', 'mem letterrow' + (letterOpen ? '' : ' locked'));
   li.appendChild(el('div', 'm', '✉'));
   const body = el('div');
@@ -1382,7 +1504,7 @@ function renderMemories() {
   list.appendChild(li);
   let unlocked = 0;
   for (let m = 0; m <= MONTHS; m++) {
-    const date = addMonths(START, m), open = m === 0 || farthest >= monthDay(m);
+    const date = addMonths(START, m), open = true;
     if (open) unlocked++;
     const row = el('li', 'mem' + (open ? '' : ' locked'));
     const badge = el('div', 'm');
@@ -1394,7 +1516,7 @@ function renderMemories() {
     row.appendChild(b2);
     list.appendChild(row);
   }
-  $('memCount').textContent = unlocked + ' of ' + (MONTHS + 1) + ' memories unlocked' + (unlocked < MONTHS + 1 ? '. Run further to collect the rest.' : '. You found them all.');
+  $('memCount').textContent = unlocked + (unlocked === 1 ? ' little memory' : ' little memories') + ' of us.';
 }
 
 function renderMissions() {
@@ -1493,7 +1615,6 @@ document.addEventListener('visibilitychange', () => {
   else pauseGame();
 });
 window.addEventListener('resize', resize);
-
 /* ---------------- Solo flow ---------------- */
 function startGame() {
   if (room) return;
@@ -1504,28 +1625,23 @@ function startGame() {
   show(null);
   daily.c.runsDay++; progress('runsDay', daily.c.runsDay); saveDaily();
   const bonus = touchStreak();
-  if (bonus) toast('Daily love bonus · +' + bonus + ' ♥', '🔥 ' + plural(streak.count, 'day') + ' streak. Come back tomorrow to grow it.', 3400);
-  else toast('Level 1 · ' + levelName(0), 'The day we met, ' + fmt(START) + '. Everything started here.', 3000);
+  showBanner('LEVEL 1', levelName(0));
+  if (bonus) setTimeout(() => { if (state === 'play') hudPop('DAILY BONUS +' + bonus + ' ♥', '#ffc83d'); }, 1800);
 }
-function pauseGame() { if (state !== 'play' || inCoop()) return; state = 'paused'; hideToast(); saveCoins(); saveDaily(); show('ovPause'); }
+function pauseGame() { if (state !== 'play' || inCoop()) return; state = 'paused'; hideToast(); hideTip(); saveCoins(); saveDaily(); show('ovPause'); }
 function resumeGame() { state = 'play'; show(null); }
 function resumeAfterLetter() {
   obstacles = obstacles.filter(o => sxOf(o) > dino.x + 460);
   genX = Math.max(genX, dist + W + 200);
   viki.mode = 'run'; dino.tx = 88; tagT = 5;
   inv = 2; state = 'play'; show(null);
-  toast('Into our future', 'Now we run together. Every step from here is a day we have not lived yet.', 3400);
 }
+const meters = () => Math.floor(dist / 10);
 function saveFarthest() {
   const d = Math.floor(score);
   if (d > farthest) { farthest = d; store.set('farthest', farthest); }
-}
-function onMonth(m) {
-  sfx.month();
-  burstHearts(dino.x + 40, GROUND - 60 - dino.dy, REDUCED ? 4 : 10);
-  if (m <= MONTHS) toast('Month ' + m + ' · ' + fmt(addMonths(START, m)), noteFor(m));
-  else toast(fmt(addMonths(START, m)), FUTURE[(m - MONTHS - 1) % FUTURE.length]);
-  saveFarthest();
+  const m = meters();
+  if (m > bestDist) { bestDist = m; store.set('bestDist', bestDist); }
 }
 function compareLine() {
   const others = peerList().filter(p => p.run === room.run && peerHere(p));
@@ -1541,41 +1657,18 @@ function onLevel(l) {
   sfx.level();
   confetti(REDUCED ? 10 : 40);
   progress('levelRun', l + 1);
-  let sub;
-  if (inCoop() && !meAlive) { reviveMe(true); sub = 'Checkpoint! You are back in the run.'; }
-  else {
-    const gained = lives < 3;
-    lives = Math.min(3, lives + 1);
-    sub = (gained ? '+1 life. ' : '') + (inCoop() ? compareLine() : LEVEL_HINTS[l % 5]);
-  }
-  toast('Level ' + (l + 1) + ' · ' + levelName(l), sub || LEVEL_HINTS[l % 5], 3200);
-}
-function onToday() {
-  reachedToday = true;
-  saveFarthest();
-  sfx.finale();
-  confetti(REDUCED ? 30 : 140);
-  burstHearts(dino.x + 40, GROUND - 60 - dino.dy, REDUCED ? 6 : 20);
-  if (inCoop()) { toast('Today · ' + fmt(TODAY), 'You made it to today together! Keep running into your future.', 3600); return; }
-  if (letterSeen !== MONTHS) {
-    letterSeen = MONTHS; store.set('letterSeen', letterSeen);
-    state = 'celebrate'; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = []; ladders = []; springs = []; signs = [];
-    dino.dy = 0; dino.vy = 0; dino.ground = true; dino.respawnT = 0; dino.climb = null;
-    genX = Math.max(genX, dist + W + 200);
-    viki.mode = 'enter'; viki.x = W + 10; viki.dy = 0; viki.anim = 0;
-    viki.sp = Math.max(300, (W + 10 - (dino.x + 60)) / 1.3);
-    hideToast();
-  } else {
-    viki.mode = 'run'; viki.x = -70; dino.tx = 88; tagT = 4;
-    toast('Today · ' + fmt(TODAY), 'You made it to today again. Now we run together.', 3200);
-  }
+  let sub = levelName(l);
+  if (inCoop() && !meAlive) { reviveMe(true); sub = 'CHECKPOINT · YOU ARE BACK'; }
+  else if (lives < 3) { lives++; hudPop('+1 LIFE', '#ff3d7f'); }
+  showBanner('LEVEL ' + (l + 1), sub);
+  showTip(myChar);
 }
 function loseLife(kind) {
   if (shieldOn) {
     shieldOn = false; inv = 1.1; flash = 0.12;
     sfx.shield(); buzz(30);
     puff(dino.x + 50, GROUND - 40 - dino.dy, 12);
-    floatText(dino.x + 30, dinoTop() - 16, "Purest's hug!", '#2f7fae');
+    floatText(dino.x + 30, dinoTop() - 16, 'SHIELD!', '#2f7fae');
     return false;
   }
   lastHit = kind;
@@ -1585,7 +1678,7 @@ function loseLife(kind) {
   puff(dino.x + 50, GROUND - 40 - dino.dy, 10);
   if (lives <= 0) {
     if (inCoop()) goDown(false);
-    else { state = 'dying'; timer = 0.9; hideToast(); sfx.over(); buzz([60, 40, 120]); }
+    else { state = 'dying'; timer = 0.9; hideToast(); hideTip(); sfx.over(); buzz([60, 40, 120]); }
   }
   return true;
 }
@@ -1595,7 +1688,7 @@ function fellInPit() {
   if (shieldOn) { loseLife('pit'); return; }
   const hadLives = lives;
   loseLife('pit');
-  if (state === 'play' && meAlive && hadLives > 1) floatText(dino.x + 30, GROUND - 190, 'Oops! Up you go', '#7a3cc4');
+  if (state === 'play' && meAlive && hadLives > 1) floatText(dino.x + 30, GROUND - 190, 'UP YOU GO', '#7a3cc4');
   if (inCoop()) sendState('pit');
 }
 function stomp(f) {
@@ -1606,7 +1699,7 @@ function stomp(f) {
   dino.vy = -STOMP_V; dino.ground = false; dino.buffer = 0;
   sfx.stomp(); buzz(25);
   puff(foeX(f) - dist + 21, GROUND - f.h - 10, 12);
-  floatText(dino.x + 30, dinoTop() - 14, 'Stomp! +' + g, '#7a3cc4');
+  floatText(dino.x + 30, dinoTop() - 14, 'STOMP +' + g, '#7a3cc4');
   progress('stompRun', run.stomps);
   if (inCoop()) { NET.send('k', { id: f.id, run: room.run }, true); sendState('stomp'); }
   dino.climb = null;
@@ -1619,13 +1712,13 @@ function syncJump(p) {
   sfx.sync();
   const mx = (dino.x + p.x) / 2 + 30;
   burstHearts(mx, GROUND - 130 - dino.dy, REDUCED ? 3 : 8);
-  floatText(mx, GROUND - 150 - dino.dy, 'In sync! +' + g, '#ff3d7f');
+  floatText(mx, GROUND - 150 - dino.dy, 'IN SYNC +' + g, '#ff3d7f');
 }
 function collectHeart(h) {
   h.gone = true;
   combo++;
   const m = multFor(combo);
-  if (m > mult) { sfx.combo(m); floatText(dino.x + 30, dinoTop() - 30, 'x' + m + ' combo!', '#ff3d7f'); }
+  if (m > mult) { sfx.combo(m); floatText(dino.x + 30, dinoTop() - 30, 'x' + m + ' COMBO', '#ff3d7f'); }
   else if (h.gold) sfx.gold(); else sfx.heart();
   mult = m;
   run.maxMult = Math.max(run.maxMult, mult);
@@ -1636,7 +1729,8 @@ function collectHeart(h) {
   run.hearts++; daily.c.heartsDay++;
   const hx = h.wx - dist, hy = GROUND - h.yOff;
   burstHearts(hx + 13, hy + 12, REDUCED ? 3 : (h.gold ? 12 : 7), h.gold);
-  floatText(hx + 13, hy - 6, '+' + gain + ' days', h.gold ? '#b7800a' : null);
+  floatText(hx + 13, hy - 6, '+' + gain, h.gold ? '#b7800a' : null);
+  teamCheck();
   progress('heartsRun', run.hearts);
   progress('heartsDay', daily.c.heartsDay);
   progress('combo', mult);
@@ -1648,8 +1742,8 @@ function collectHeart(h) {
     if (rv >= 3) {
       rv = 0; rvTarget = ''; reviveSerial++; reviveTo = target.id; revivesGiven++; reviveWaitUntil = Date.now() + 2500;
       sfx.revive(); buzz([40, 30, 40]);
-      floatText(target.x + 30, GROUND - 110, 'Back to life!', '#ff3d7f');
-      toast('You brought ' + target.name + ' back!', 'Love wins again. Keep running, all of you.', 2600);
+      floatText(target.x + 30, GROUND - 110, 'BACK!', '#ff3d7f');
+      hudPop(target.name.toUpperCase() + ' IS BACK!', '#ff3d7f');
     }
     sendState('');
   }
@@ -1661,11 +1755,40 @@ function pickPower(p) {
   if (p.type === 'shield') shieldOn = true;
   if (p.type === 'magnet') magnetT = 8;
   if (p.type === 'double') doubleT = 8;
-  toast(PU_INFO[p.type].title, PU_INFO[p.type].text, 2200);
+  hudPop(POWER_WORD[p.type], POWER_COLOR[p.type]);
   burstHearts(p.wx - dist + 15, GROUND - p.yOff + 15, REDUCED ? 3 : 8, p.type === 'double');
   progress('powerDay', daily.c.powerDay);
 }
+const POWER_WORD = { shield: 'SHIELD ON', magnet: 'HEART MAGNET', double: 'DOUBLE POINTS' };
+const POWER_COLOR = { shield: '#2f7fae', magnet: '#ff3d7f', double: '#d29a2e' };
+function teamHearts() {
+  let n = run.hearts;
+  if (inCoop()) for (const p of peerList()) if (p.run === room.run && peerHere(p)) n += p.hc || 0;
+  return n;
+}
+function teamCheck() {
+  if (state !== 'play' || !meAlive) return;
+  const lvl = Math.floor(teamHearts() / TEAM_GOAL);
+  if (lvl <= teamLevel) return;
+  teamLevel = lvl;
+  magnetT = Math.max(magnetT, 6); doubleT = Math.max(doubleT, 6);
+  sfx.level(); confetti(REDUCED ? 8 : 26);
+  showBanner(inCoop() ? 'TEAM POWER!' : 'LOVE POWER!', 'MAGNET + DOUBLE POINTS');
+}
+function openChest(c) {
+  c.open = true; chestsOpened++;
+  const g = 40 * (doubleT > 0 ? 2 : 1);
+  score += g; coins += 15; run.coins += 15;
+  const types = ['shield', 'magnet', 'double'], t = types[Math.floor(Math.random() * 3)];
+  if (t === 'shield') shieldOn = true; else if (t === 'magnet') magnetT = Math.max(magnetT, 8); else doubleT = Math.max(doubleT, 8);
+  sfx.gold(); buzz([20, 30, 20]);
+  const x = c.wx - dist + 18, y = GROUND - c.h - 24;
+  burstHearts(x, y, REDUCED ? 4 : 14, true);
+  floatText(x, y - 20, 'TREASURE +' + g, '#b7800a');
+  hudPop('+15 ♥ · ' + POWER_WORD[t], '#d29a2e');
+}
 function gameOver() {
+  hideTip();
   state = 'over';
   played = true; store.set('played', true);
   const s = Math.floor(score);
@@ -1677,10 +1800,10 @@ function gameOver() {
   const rankNow = rankOf(best);
   $('oEyebrow').textContent = rankNow > rankStart ? 'New rank: ' + RANKS[rankNow][1] : isNew ? 'Look at you go' : 'Game over · level ' + (curLevel + 1);
   const titles = lastHit === 'cloud' ? ['A grumpy cloud got you', 'That cloud was jealous']
-    : lastHit === 'pit' ? ['Into the gap you went', 'Mind the gap, my love']
+    : lastHit === 'pit' ? ['Into the gap you went', 'Mind the gap!']
     : lastHit === 'foe' ? ['A grumpy puff got you', 'Stomp them next time']
-    : ['Ouch, that cactus won', 'Oops! One more try?', 'So close, my love'];
-  $('oTitle').textContent = reachedToday ? 'You ran into our future' : titles[Math.floor(Math.random() * titles.length)];
+    : ['Ouch, that cactus won', 'Oops! One more try?', 'So close!'];
+  $('oTitle').textContent = titles[Math.floor(Math.random() * titles.length)];
   const gapToBest = prevBest - s;
   const close = !isNew && prevBest > 0 && gapToBest <= Math.max(60, prevBest * 0.2);
   $('oClose').hidden = !close;
@@ -1692,11 +1815,13 @@ function gameOver() {
   if (run.maxMult > 1) chips.appendChild(chip('x' + run.maxMult + ' combo', 'hot'));
   if (run.stomps > 0) chips.appendChild(chip(plural(run.stomps, 'stomp')));
   if (run.near > 0) chips.appendChild(chip(plural(run.near, 'close call')));
-  $('oBar').style.width = Math.min(100, s / TOTAL_DAYS * 100) + '%';
-  const reached = addDays(START, s);
-  $('oReach').textContent = reachedToday
-    ? 'You ran past today, all the way to ' + fmt(reached) + '.'
-    : 'You reached ' + fmt(reached) + '. Only ' + plural(TOTAL_DAYS - s, 'day') + ' left until today and my letter.';
+  if (chestsOpened > 0) chips.appendChild(chip(plural(chestsOpened, 'chest')));
+  const m = meters(), prevFar = run.bestDist0 || 0;
+  $('oBar').style.width = Math.min(100, prevFar > 0 ? m / prevFar * 100 : 100) + '%';
+  $('oReach').textContent = prevFar > 0 && m < prevFar
+    ? 'You ran ' + m + ' m. Your farthest is ' + prevFar + ' m, only ' + (prevFar - m) + ' m more.'
+    : 'You ran ' + m + ' m. That is your farthest run yet!';
+  fillTip($('oTip'), myChar);
   renderMini($('oMissions'));
   $('oRank').textContent = rankLine(best);
   show('ovOver');
@@ -1778,7 +1903,7 @@ function stepWorld(dt) {
     for (const h of hist) { if (h[0] <= gt - 0.11) v = h[1]; else break; }
     viki.dy = v;
   }
-  if (inCoop()) for (const p of peerList()) if (p.body && p.alive && p.run === room.run) stepBody(p.body, p.x, dt, false, dist, gt);
+  if (inCoop()) for (const p of peerList()) if (p.body && p.alive && p.run === room.run) stepBody(p.body, p.x, dt, false, dist, gt, true);
   for (const g of gates) if (!g.passed && g.wx + 20 < dist + dino.x + 30) { g.passed = true; if (state === 'play') onLevel(g.lvl); }
   trackPasses();
   if (magnetT > 0 && meAlive) {
@@ -1804,6 +1929,7 @@ function stepWorld(dt) {
     for (const p of pups) {
       if (!p.gone && touches(p.wx - dist, GROUND - p.yOff + bobOf(p.ph, 4, 4), PU[p.type].width, PU[p.type].height)) pickPower(p);
     }
+    for (const c of chests) if (!c.open && touches(c.wx - dist, GROUND - c.h - CHEST[0].height, CHEST[0].width, CHEST[0].height)) openChest(c);
   }
   hearts = hearts.filter(h => h.wx - dist > -40 && !h.gone);
   pups = pups.filter(p => p.wx - dist > -40 && !p.gone);
@@ -1813,14 +1939,15 @@ function milestones(prev) {
   const d1 = Math.floor(score);
   if (d1 <= Math.floor(prev)) return;
   progress('scoreRun', d1);
-  if (!bestAnnounced && d1 > best) {
+  if (!bestAnnounced && best > 0 && d1 > best) {
     bestAnnounced = true; sfx.combo(5);
-    toast('New high score!', 'Every step from here is a new record. Keep going!', 2400);
+    hudPop('NEW HIGH SCORE!', '#ffc83d');
   }
-  let m = lastMonth + 1, crossed = 0;
-  while (monthDay(m) <= d1) { crossed = m; m++; }
-  if (crossed) { lastMonth = crossed; onMonth(crossed); }
-  if (!reachedToday && d1 >= TOTAL_DAYS) onToday();
+  if (!passedBest && run.bestDist0 > 0 && meters() > run.bestDist0) {
+    passedBest = true; sfx.month();
+    burstHearts(dino.x + 40, GROUND - 60 - dino.dy, REDUCED ? 4 : 12, true);
+    hudPop('PAST YOUR FARTHEST!', '#7a3cc4');
+  }
 }
 function updateCamera(dt) {
   const topRoom = HUD + 150, need = (GROUND - 75 - (meAlive ? dino.dy : 150)) - topRoom;
@@ -1833,6 +1960,9 @@ function updateFx(dt) {
   if (themeK < 1) themeK = Math.min(1, themeK + dt / 1.5);
   for (const p of parts) { p.age += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.rot !== undefined) p.rot += p.vr * dt; }
   parts = parts.filter(p => p.age < p.life);
+  if (banner) banner.t += dt;
+  for (const q of pops) q.age += dt;
+  pops = pops.filter(q => q.age < q.life);
   for (const f of floats) { f.age += dt; f.y -= 40 * dt; }
   floats = floats.filter(f => f.age < f.life);
   if (shake > 0) shake -= dt;
@@ -1865,7 +1995,6 @@ function tick(dt) {
   else if (state === 'over' && inCoop()) { if (meAlive) physics(dt, false); }
   updateFx(dt);
 }
-
 /* ---------------- Playing together (up to 5 phones) ---------------- */
 const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -1934,6 +2063,41 @@ function connectBroker(url) {
     c.on('connect', () => { if (done) return; done = true; clearTimeout(tm); resolve(c); });
     c.on('error', fail);
   }));
+}
+
+// Open a test connection and time a message bouncing back through the server
+function probeBroker(url) {
+  return connectBroker(url).then(c => new Promise(resolve => {
+    const topic = 'runtoyou/v3/probe/' + NET.id + Math.random().toString(36).slice(2, 6);
+    let t0 = performance.now(), done = false;
+    const end = rtt => { if (done) return; done = true; c.removeListener('message', h); try { c.unsubscribe(topic); } catch (e) {} resolve({ client: c, rtt }); };
+    const h = tp => { if (tp === topic) end(performance.now() - t0); };
+    c.on('message', h);
+    c.subscribe(topic, { qos: 0 }, () => { t0 = performance.now(); try { c.publish(topic, '1', { qos: 0 }); } catch (e) {} });
+    setTimeout(() => end(5000), 2500);
+  }));
+}
+// The host tries every game server at once and keeps the quickest one
+function connectFastest(list) {
+  return new Promise(resolve => {
+    const results = [];
+    let pending = list.length, settled = false, timer = null;
+    const finish = () => {
+      if (settled) return; settled = true; clearTimeout(timer);
+      let best = null;
+      for (const r of results) if (!best || r.rtt < best.rtt) best = r;
+      for (const r of results) if (r !== best) try { r.client.end(true); } catch (e) {}
+      resolve(best);
+    };
+    list.forEach((url, i) => {
+      probeBroker(url).then(r => {
+        r.idx = i;
+        if (settled) { try { r.client.end(true); } catch (e) {} return; }
+        results.push(r);
+        if (!timer) timer = setTimeout(finish, 1400);
+      }).catch(() => {}).then(() => { if (--pending === 0) finish(); });
+    });
+  });
 }
 
 /* Direct phone-to-phone links (WebRTC), one per pair, set up through the relay; the relay stays as the fallback */
@@ -2103,11 +2267,10 @@ async function openRoom(code, host, brokerIdx) {
   const list = brokerList();
   let client = null, idx = brokerIdx;
   if (host) {
-    for (let i = 0; i < list.length && !client && room === me; i++) {
-      try { client = await connectBroker(list[i]); idx = i; } catch (e) {}
-    }
+    const best = await connectFastest(list);
+    if (best) { client = best.client; idx = best.idx; me.rtt0 = best.rtt; }
   } else {
-    try { client = await connectBroker(list[idx] || list[0]); } catch (e) {}
+    for (let k = 0; k < 2 && !client && room === me; k++) { try { client = await connectBroker(list[idx] || list[0]); } catch (e) {} }
   }
   if (room !== me) { if (client) try { client.end(true); } catch (e) {} return; }
   if (!client) {
@@ -2135,7 +2298,7 @@ function leaveRoom() {
   NET.close();
   room = null;
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
-  state = 'start'; hideToast(); reset();
+  state = 'start'; hideToast(); hideTip(); reset();
   fillStart(); show('ovStart');
 }
 function renderRoom() {
@@ -2186,7 +2349,7 @@ function sendState(kind) {
   NET.send('st', {
     run: room.run, gt: Math.round(gt * 1000) / 1000, dy: Math.round(dino.dy * 10) / 10, vy: Math.round(dino.vy), g: dino.ground ? 1 : 0, rsp: Math.round(dino.respawnT * 1000) / 1000,
     cl: dino.climb ? [Math.round(dino.climb.to), Math.round(dino.climb.v)] : 0,
-    alive: meAlive, lives, inv: inv > 0, score: Math.floor(score), outfit, rv, rs: reviveSerial, rto: reviveTo, jk: kind || '', lv: curLevel
+    alive: meAlive, lives, inv: inv > 0, score: Math.floor(score), outfit, rv, rs: reviveSerial, rto: reviveTo, jk: kind || '', lv: curLevel, hc: run.hearts
   }, !!kind);
 }
 function startSync(n) {
@@ -2260,14 +2423,16 @@ function handleMsg(type, m) {
     p.run = +m.run || 0;
     p.alive = !!m.alive; p.lives = clamp(m.lives | 0, 0, 3); p.inv = !!m.inv;
     p.score = clamp(m.score | 0, 0, 1e7); p.outfit = validOutfit(m.outfit); p.rv = clamp(m.rv | 0, 0, 3); p.rs = m.rs | 0;
+    if (p.run === room.run) { const hc = clamp(m.hc | 0, 0, 1e5); if (hc > (p.hc || 0)) { p.hc = hc; if (inCoop()) teamCheck(); } }
     const mg = +m.gt;
     if (p.run === room.run && isFinite(mg) && mg > p.snapGt) {
       p.snapGt = mg;
+      if (inCoop() && gt > 0) { const lag = clamp(gt - mg, 0, 3); p.lag = p.lag === undefined ? lag : p.lag + (lag - p.lag) * 0.15; }
       const cl = Array.isArray(m.cl) ? { to: clamp(+m.cl[0] || 0, 0, 800), v: clamp(+m.cl[1] || 0, 0, 5000) } : null;
       p.body = { dy: clamp(+m.dy || 0, -100, 800), vy: clamp(+m.vy || 0, -2000, 3000), ground: !!m.g, respawnT: clamp(+m.rsp || 0, 0, 2), buffer: 0, climb: cl && cl.v > 0 ? cl : null };
       if (inCoop() && gt > mg) {
         let t = mg, n = 0;
-        while (t < gt - 1e-4 && n < 120) { const h = Math.min(1 / 120, gt - t); t += h; stepBody(p.body, p.x, h, false, distAt(t), t); n++; }
+        while (t < gt - 1e-4 && n < 120) { const h = Math.min(1 / 120, gt - t); t += h; stepBody(p.body, p.x, h, false, distAt(t), t, true); n++; }
       }
       if (m.jk === 'jump') {
         p.lastJumpGt = mg;
@@ -2275,7 +2440,7 @@ function handleMsg(type, m) {
       }
     }
     if (inCoop() && p.run === room.run && state === 'play') {
-      if (wasAlive && !p.alive && meAlive) { toast(p.name + ' is down!', 'Catch 3 hearts or reach the next level gate to bring them back.', 3000); sfx.hit(); buzz(50); }
+      if (wasAlive && !p.alive && meAlive) { hudPop(p.name.toUpperCase() + ' IS DOWN · GRAB 3 ♥', '#ff3d7f'); sfx.hit(); buzz(50); }
       if (m.rto === NET.id && p.rs > p.handled) { p.handled = p.rs; if (!meAlive) reviveMe(false, p.name); }
     }
     return;
@@ -2290,7 +2455,7 @@ function handleMsg(type, m) {
     p.last = 0;
     rtcReset(p);
     if (room.host && !(inCoop() && state === 'play')) { room.roster = room.roster.filter(e => e.id !== m.from); sendRoster(); }
-    if (state === 'play' && inCoop()) toast(p.name + ' left the game', meAlive ? 'Keep running, you can still finish this run.' : 'Hold on…', 3000);
+    if (state === 'play' && inCoop()) hudPop(p.name.toUpperCase() + ' LEFT', '#7a6a8a');
     if (current === 'ovRoom') renderRoom();
     if (current === 'ovCoopOver') fillCoopOver();
   }
@@ -2317,18 +2482,18 @@ function beginCoopRun(seed, t0Host, runId) {
   dino.x = dino.tx = SLOTS[room.mySlot] || SLOTS[0];
   gt = Math.min(0, (Date.now() - room.t0Local) / 1000);
   bestAnnounced = true;
-  for (const p of peerList()) Object.assign(p, { alive: true, lives: 3, rv: 0, rs: 0, handled: 0, score: 0, dyShown: 0, snapGt: -1e9, lastJumpGt: -99, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0, climb: null } });
+  for (const p of peerList()) Object.assign(p, { alive: true, lives: 3, rv: 0, rs: 0, handled: 0, score: 0, hc: 0, lag: undefined, dyShown: 0, snapGt: -1e9, lastJumpGt: -99, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0, climb: null } });
   state = 'play'; show(null);
   daily.c.runsDay++; progress('runsDay', daily.c.runsDay); saveDaily();
   const bonus = touchStreak();
-  if (bonus) toast('Daily love bonus · +' + bonus + ' ♥', '🔥 ' + plural(streak.count, 'day') + ' streak. Come back tomorrow to grow it.', 3400);
-  else toast('Run together · ' + plural(peerList().length + 1, 'runner'), 'Jump at the same moment for a bonus. Catch 3 hearts to bring a fallen friend back.', 3600);
+  showBanner('LEVEL 1', levelName(0)); banner.t = Math.min(0, gt);
+  if (bonus) setTimeout(() => { if (state === 'play') hudPop('DAILY BONUS +' + bonus + ' ♥', '#ffc83d'); }, Math.max(0, -gt * 1000) + 1800);
 }
 function goDown(stepped) {
   meAlive = false; combo = 0; mult = 1; inv = 0; shieldOn = false; magnetT = 0; doubleT = 0; dino.climb = null;
   sfx.over(); buzz([60, 40, 120]);
   const anyone = peersInRun().some(p => p.alive);
-  toast(stepped ? 'You left the game, so you went down' : 'You\'re down!', anyone ? 'A friend can bring you back with 3 hearts, or at the next level gate.' : 'Hold on…', 3400);
+  hudPop(anyone ? 'YOU ARE DOWN · FRIENDS CAN SAVE YOU' : 'YOU ARE DOWN', '#ff3d7f');
   sendState('down');
 }
 function reviveMe(checkpoint, by) {
@@ -2336,7 +2501,7 @@ function reviveMe(checkpoint, by) {
   dino.dy = 150; dino.vy = 0; dino.ground = false; dino.respawnT = 0.9; dino.climb = null;
   sfx.revive(); buzz([40, 30, 40]);
   burstHearts(dino.x + 30, GROUND - 160, REDUCED ? 6 : 18);
-  if (!checkpoint) toast((by || 'Your love') + ' brought you back to life!', 'One life left. Make it count.', 3000);
+  if (!checkpoint) hudPop((by ? by.toUpperCase() : 'A FRIEND') + ' SAVED YOU!', '#ff3d7f');
   sendState('revive');
 }
 function coopTick(dt) {
@@ -2366,7 +2531,7 @@ function coopTick(dt) {
   else coopEndT = 0;
 }
 function coopOver() {
-  state = 'over';
+  state = 'over'; hideTip();
   played = true; store.set('played', true);
   saveFarthest(); saveCoins(); saveDaily();
   const me = Math.floor(score);
@@ -2390,7 +2555,8 @@ function fillCoopOver(fresh) {
     const win = rows[0];
     $('coEyebrow').textContent = rows.length > 1 && rows[0].score === rows[1].score ? 'A perfect tie at the top' : (win.me ? 'You win this run 👑' : win.name + ' wins this run 👑');
     const titles = ['We will get them next time', 'Down together, up together', 'One more run, everyone?'];
-    $('coTitle').textContent = reachedToday ? 'You ran into the future together' : titles[Math.floor(Math.random() * titles.length)];
+    $('coTitle').textContent = titles[Math.floor(Math.random() * titles.length)];
+    fillTip($('coTip'), myChar);
   }
   const ol = $('coRank'); ol.innerHTML = '';
   rows.forEach((r, i) => {
@@ -2408,8 +2574,9 @@ function fillCoopOver(fresh) {
   chips.appendChild(chip(plural(syncJumps, 'in-sync jump')));
   chips.appendChild(chip(plural(revivesGiven, 'revive') + ' by you'));
   chips.appendChild(chip(plural(climbs, 'climb')));
+  if (chestsOpened) chips.appendChild(chip(plural(chestsOpened, 'chest')));
   chips.appendChild(chip('+' + run.coins + ' ♥ earned'));
-  $('coReach').textContent = 'Team best: ' + store.get('coopBest', 0) + '. You ran to ' + fmt(addDays(START, Math.floor(score))) + '.';
+  $('coReach').textContent = 'Team best: ' + store.get('coopBest', 0) + ' · this run: ' + meters() + ' m';
   const here = peerList().some(peerHere);
   $('btnCoopAgain').hidden = !room.host;
   $('btnCoopAgain').disabled = !here;
@@ -2433,7 +2600,6 @@ setInterval(() => {
   if (current === 'ovRoom') renderRoom();
   if (current === 'ovCoopOver') fillCoopOver(false);
 }, 1000);
-
 /* ---------------- Draw ---------------- */
 function pixelDisc(cx, cy, r) {
   for (let y = -r; y <= r; y += 3) {
@@ -2551,14 +2717,50 @@ function drawLadder(l, pal) {
   ctx.fillStyle = '#ffd35c';
   if (Math.sin(clock * 6) > 0) { ctx.fillRect(x + l.w / 2 - 6, top - 18, 12, 6); ctx.fillRect(x + l.w / 2 - 3, top - 24, 6, 6); }
 }
+// Signposts show a picture instead of words: an arrow up a ladder, or a spring with bounce arrows
 function drawSign(s) {
-  const x = Math.round(s.wx - dist);
-  if (x > W + 10 || x < -200) return;
-  ctx.font = '8px "Press Start 2P", monospace'; ctx.textAlign = 'center';
-  const w = ctx.measureText(s.text).width + 14;
+  const x = Math.round(s.wx - dist) + 60, w = 42;
+  if (x > W + 10 || x < -60) return;
   ctx.fillStyle = '#7a4a2a'; ctx.fillRect(x + w / 2 - 3, GROUND - 40, 6, 40);
-  ctx.fillStyle = '#c48a54'; ctx.fillRect(x, GROUND - 62, w, 22);
-  ctx.fillStyle = '#4a2a14'; ctx.fillText(s.text, x + w / 2, GROUND - 47);
+  ctx.fillStyle = '#4a2a14'; ctx.fillRect(x - 3, GROUND - 77, w + 6, 40);
+  ctx.fillStyle = '#c48a54'; ctx.fillRect(x, GROUND - 74, w, 34);
+  ctx.fillStyle = '#4a2a14';
+  const cx = x + w / 2, y0 = GROUND - 70;
+  if (/LADDER/.test(s.text)) {
+    ctx.fillRect(cx - 12, y0 + 4, 3, 24); ctx.fillRect(cx - 3, y0 + 4, 3, 24);
+    for (let k = 0; k < 4; k++) ctx.fillRect(cx - 12, y0 + 7 + k * 6, 12, 2);
+    ctx.fillRect(cx + 7, y0 + 8, 3, 18);
+    ctx.fillRect(cx + 4, y0 + 11, 9, 3); ctx.fillRect(cx + 2, y0 + 14, 3, 3); ctx.fillRect(cx + 12, y0 + 14, 3, 3);
+  } else {
+    const up = Math.sin(clock * 8) > 0 ? 2 : 0;
+    ctx.fillRect(cx - 10, y0 + 24, 20, 3); ctx.fillRect(cx - 7, y0 + 18, 14, 3); ctx.fillRect(cx - 10, y0 + 12, 20, 3);
+    ctx.fillStyle = '#ff4d7d'; ctx.fillRect(cx - 10, y0 + 9, 20, 3);
+    ctx.fillStyle = '#4a2a14';
+    ctx.fillRect(cx - 3, y0 + 1 - up, 6, 3); ctx.fillRect(cx - 6, y0 + 4 - up, 3, 3); ctx.fillRect(cx + 3, y0 + 4 - up, 3, 3);
+  }
+}
+function drawChest(c) {
+  const x = Math.round(c.wx - dist), img = CHEST[c.open ? 1 : 0];
+  if (x > W + 10 || x < -60) return;
+  const y = Math.round(GROUND - c.h - img.height + 3);
+  if (!c.open) {
+    ctx.globalAlpha = 0.25 + 0.15 * Math.sin(clock * 5 + c.wx);
+    ctx.fillStyle = '#fff2b8'; pixelDisc(x + img.width / 2, y + img.height / 2, 30);
+    ctx.globalAlpha = 1;
+  }
+  ctx.drawImage(img, x, y);
+  if (!c.open && Math.sin(clock * 7 + c.wx) > 0.7) { ctx.fillStyle = '#ffffff'; ctx.fillRect(x + img.width - 3, y - 6, 3, 3); ctx.fillRect(x - 3, y + 6, 3, 3); }
+}
+function drawBestFlag(pal) {
+  const b = run.bestDist0;
+  if (!b || state === 'start') return;
+  const x = Math.round(b * 10 - dist + dino.x + 46);
+  if (x > W + 20 || x < -30) return;
+  ctx.fillStyle = pal.line; ctx.fillRect(x, GROUND - 96, 4, 96);
+  const wave = Math.sin(clock * 6) > 0 ? 3 : 0;
+  ctx.fillStyle = '#7a3cc4'; ctx.fillRect(x + 4, GROUND - 96, 30, 21 + wave);
+  ctx.fillStyle = '#ffd35c';
+  ctx.fillRect(x + 16, GROUND - 92, 3, 3); ctx.fillRect(x + 13, GROUND - 89, 9, 3); ctx.fillRect(x + 10, GROUND - 86, 15, 3); ctx.fillRect(x + 13, GROUND - 83, 3, 3); ctx.fillRect(x + 19, GROUND - 83, 3, 3);
 }
 let lastHeaderN = -1;
 function draw() {
@@ -2656,8 +2858,10 @@ function draw() {
     ctx.fillStyle = '#ffd35c'; ctx.fillRect(x + 3, GROUND - 198, 3, 12); ctx.fillRect(x + 6, GROUND - 198, 9, 6);
   }
   for (const s of signs) drawSign(s);
+  drawBestFlag(pal);
   for (const p of plats) drawPlat(p, pal);
   for (const l of ladders) drawLadder(l, pal);
+  for (const c of chests) drawChest(c);
   for (const sp of springs) {
     const x = Math.round(sp.wx - dist);
     if (x > W + 10 || x < -60) continue;
@@ -2731,7 +2935,7 @@ function draw() {
     tops[p.id] = drawRunner(p.char, p.x, pdy, pose, p.outfit, alpha, false);
     if (!ghost && pb.respawnT > 0) bubble(p.x, pdy);
   }
-  const myChar0 = coop ? myChar : 'sunshine';
+  const myChar0 = myChar;
   let myPose = 'stand';
   if (state === 'dying' || (state === 'over' && !coop)) myPose = 'hurt';
   else if (!dino.ground || dino.climb) myPose = 'jump';
@@ -2800,11 +3004,12 @@ function draw() {
     ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
+  drawPops(cy);
   ctx.restore();
 
   drawWeather(themeTo, themeK);
   drawHud(pal);
-  if (cy < 40) drawJourney(pal, cy);
+  drawBanner(cy);
 
   if (coop && state === 'play') {
     for (const p of others) {
@@ -2812,7 +3017,6 @@ function draw() {
       const sy = (p.alive ? GROUND - 75 - p.dyShown : GROUND - 225) + cy;
       if (sy < HUD + 120) pill('▲ ' + p.name, p.x + 30, HUD + 140, '#7a3cc4');
     }
-    const by = HUD + 168;
     if (gt <= 0) {
       const c = Math.ceil(-gt);
       ctx.font = '40px "Press Start 2P", monospace'; ctx.textAlign = 'center';
@@ -2820,14 +3024,10 @@ function draw() {
       ctx.fillText(c > 0 ? String(c) : 'GO!', W / 2 + 3, GROUND - 200 + 3);
       ctx.fillStyle = '#c42e68';
       ctx.fillText(c > 0 ? String(c) : 'GO!', W / 2, GROUND - 200);
-      pill('Get ready to run together', W / 2, GROUND - 160);
     } else if (gt < 0.6) {
       ctx.font = '40px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#c42e68';
       ctx.fillText('GO!', W / 2, GROUND - 200 + cy);
     }
-    const tgt = reviveTarget();
-    if (gt > 0 && !meAlive && others.some(p => p.alive && peerHere(p))) pill('You\'re down · a friend can catch 3 ♥ for you', W / 2, by, '#7a3cc4');
-    else if (gt > 0 && tgt) pill(tgt.name + ' is down · catch ' + (3 - (rvTarget === tgt.id ? rv : 0)) + ' more ♥', W / 2, by);
   }
 
   if (flash > 0) { ctx.fillStyle = 'rgba(255,70,120,' + (flash * 0.6).toFixed(3) + ')'; ctx.fillRect(-10, -10, W + 20, H + 20); }
@@ -2835,13 +3035,46 @@ function draw() {
 }
 const pad = v => String(Math.max(0, Math.floor(v))).padStart(5, '0');
 function drawHud(pal) {
+  const dark = nightness() > 0.5 || themeTo === 4 || themeTo === 1;
+  ctx.save();
+  ctx.shadowColor = dark ? 'rgba(30,10,40,0.55)' : 'rgba(255,255,255,0.8)';
+  ctx.shadowOffsetX = ctx.shadowOffsetY = Math.max(1, Math.round(2 * S * DPR)); ctx.shadowBlur = 0;
+  drawHudInner(pal);
+  ctx.restore();
+}
+function drawHudInner(pal) {
   for (let i = 0; i < 3; i++) ctx.drawImage(i < lives && meAlive ? HEART : HEART_GRAY, 14 + i * 30, HUD);
   ctx.fillStyle = pal.hud;
   ctx.textAlign = 'left';
   ctx.font = '11px "Press Start 2P", monospace';
-  ctx.fillText('LV' + (curLevel + 1) + ' ' + fmt(addDays(START, Math.floor(score))), 16, HUD + 46);
+  const lvTxt = 'LV' + (curLevel + 1) + ' ' + Math.floor(dist / 10) + 'm';
+  ctx.fillText(lvTxt, 16, HUD + 46);
+  if (inCoop() && state === 'play') {
+    // connection light: green = direct link, yellow = a little delay, red = slow
+    let lag = 0, direct = true, any = false;
+    for (const p of peerList()) if (p.run === room.run && peerHere(p)) { any = true; lag = Math.max(lag, p.lag || 0); if (!p.rtc.open) direct = false; }
+    if (any) {
+      const dx = 16 + ctx.measureText(lvTxt).width + 10;
+      ctx.fillStyle = lag < 0.12 ? '#3ccf6e' : lag < 0.3 ? '#ffc83d' : '#ff4d4d';
+      ctx.fillRect(dx, HUD + 37, 9, 9);
+      ctx.font = '8px "Press Start 2P", monospace'; ctx.fillStyle = pal.hud;
+      ctx.fillText((direct ? '' : '~') + Math.round(lag * 1000) + 'ms', dx + 14, HUD + 46);
+    }
+  }
+  // level progress, from this gate to the next
+  const l0 = lvStart(curLevel), l1 = lvStart(curLevel + 1), lp = Math.max(0, Math.min(1, (dist - l0) / (l1 - l0)));
+  ctx.globalAlpha = 0.3; ctx.fillStyle = pal.line; ctx.fillRect(16, HUD + 54, 120, 5); ctx.globalAlpha = 1;
+  ctx.fillStyle = '#7a3cc4'; ctx.fillRect(16, HUD + 54, Math.round(120 * lp), 5);
+  ctx.fillStyle = '#ff5c93'; ctx.fillRect(136, HUD + 49, 3, 13); ctx.fillRect(139, HUD + 49, 6, 5);
+  // team (or solo) love power: every TEAM_GOAL hearts gives magnet + double points
+  if (state === 'play' || state === 'paused') {
+    const th = teamHearts(), tp = (th % TEAM_GOAL) / TEAM_GOAL;
+    ctx.drawImage(HEART, 14, HUD + 64, 14, 13);
+    ctx.globalAlpha = 0.3; ctx.fillStyle = pal.line; ctx.fillRect(32, HUD + 69, 104, 5); ctx.globalAlpha = 1;
+    ctx.fillStyle = '#ff5c93'; ctx.fillRect(32, HUD + 69, Math.round(104 * tp), 5);
+  }
   let px = 16;
-  const py = HUD + 58;
+  const py = HUD + 84;
   const icon = (pimg, frac) => {
     const w = 24, h = Math.round(24 * pimg.height / pimg.width);
     ctx.drawImage(pimg, px, py, w, h);
@@ -2871,6 +3104,7 @@ function drawHud(pal) {
     ctx.fillText('x' + mult + ' COMBO', W - 16, HUD + 42);
   }
   if (inCoop()) {
+    ctx.shadowColor = 'transparent';
     const rows = [{ name: 'You', score: Math.floor(score), alive: meAlive, here: true, me: true }]
       .concat(peerList().filter(p => p.run === room.run).map(p => ({ name: p.name, score: p.score, alive: p.alive, here: peerHere(p) })));
     rows.sort((a, b) => b.score - a.score);
@@ -2887,6 +3121,44 @@ function drawHud(pal) {
       if (i === 0 && rows.length > 1 && rows[0].score > rows[1].score) ctx.drawImage(CROWN, Math.round(W - 16 - w - CROWN.width), y - 13);
     });
   }
+}
+function lvStart(l) { return l < LV_STARTS.length ? LV_STARTS[l] : 39000 + (l - 4) * 15000; }
+function drawBanner(cy) {
+  if (!banner) return;
+  const t = banner.t;
+  if (t < 0) return;
+  if (t > 2.6) { banner = null; return; }
+  const a = t < 0.25 ? t / 0.25 : t > 2.1 ? (2.6 - t) / 0.5 : 1;
+  const slide = t < 0.25 ? (1 - t / 0.25) * 40 : 0;
+  const y = Math.round(Math.max(HUD + 110, GROUND * 0.45));
+  ctx.globalAlpha = Math.max(0, a);
+  ctx.textAlign = 'center';
+  ctx.font = '28px "Press Start 2P", monospace';
+  ctx.fillStyle = 'rgba(60,20,50,0.35)'; ctx.fillText(banner.title, W / 2 + 3 + slide, y + 3);
+  ctx.fillStyle = '#ffffff'; ctx.fillText(banner.title, W / 2 + slide, y);
+  ctx.fillStyle = '#ff3d7f'; ctx.fillText(banner.title, W / 2 + slide, y - 2);
+  if (banner.sub) {
+    ctx.font = '10px "Press Start 2P", monospace';
+    const w = ctx.measureText(banner.sub).width + 24;
+    ctx.fillStyle = 'rgba(255,250,247,0.92)'; ctx.fillRect(Math.round(W / 2 - w / 2 - slide), y + 14, Math.round(w), 22);
+    ctx.fillStyle = '#7a3cc4'; ctx.fillText(banner.sub, W / 2 - slide, y + 30);
+  }
+  ctx.globalAlpha = 1;
+}
+function drawPops(cy) {
+  if (!pops.length) return;
+  ctx.textAlign = 'center';
+  ctx.font = '11px "Press Start 2P", monospace';
+  for (let i = 0; i < pops.length; i++) {
+    const p = pops[i];
+    const a = p.age < 0.15 ? p.age / 0.15 : p.age > p.life - 0.4 ? (p.life - p.age) / 0.4 : 1;
+    const y = Math.round(GROUND - 150 - dino.dy * 0.6 - p.age * 18 - (pops.length - 1 - i) * 20);
+    const w = ctx.measureText(p.text).width + 18;
+    ctx.globalAlpha = Math.max(0, a);
+    ctx.fillStyle = 'rgba(255,250,247,0.9)'; ctx.fillRect(Math.round(W / 2 - w / 2), y - 14, Math.round(w), 20);
+    ctx.fillStyle = p.color; ctx.fillText(p.text, W / 2, y);
+  }
+  ctx.globalAlpha = 1;
 }
 function drawJourney(pal, cy) {
   const y = GROUND + 22 + cy, x0 = 22, x1 = W - 22, len = x1 - x0;
@@ -2931,7 +3203,18 @@ window.__rty = {
   down() { lives = 0; goDown(false); },
   give(c) { coins += c; saveCoins(); },
   warp(t) { if (!inCoop()) { gt = t; dist = distAt(t); genX = Math.max(genX, dist + 200); obstacles = []; hearts = []; plats = []; pits = []; foes = []; ladders = []; springs = []; signs = []; lastGateLvl = levelIndexAt(dist); } },
-  force(seg) { forceSeg = seg; }
+  force(seg) { forceSeg = seg; },
+  ahead() {
+    const fx = dist + dino.x + 46; let d = 1e9;
+    if (Math.abs(dino.dy) < 1) {
+      for (const o of obstacles) if (o.kind === 'cactus' && o.wx > fx - 4) d = Math.min(d, o.wx - fx);
+      for (const q of pits) if (q.wx > fx - 4) d = Math.min(d, q.wx - fx);
+      for (const l of ladders) if (l.wx > fx - 4) d = Math.min(d, l.wx - fx);
+    }
+    for (const f of foes) { if (f.dead || Math.abs(f.h - dino.dy) > 2) continue; const x = foeXAt(f, gt); if (x > fx - 10) d = Math.min(d, x - fx); }
+    return { d, ground: dino.ground, speed };
+  },
+  lag() { return peerList().map(p => Math.round((p.lag || 0) * 1000)); }
 };
 
 paintSound();
