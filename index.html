@@ -1,0 +1,2170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffc9de">
+<meta name="description" content="A little running game, from Purest with love.">
+<title>Run to You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Nunito:wght@500;700;800&family=Pixelify+Sans:wght@500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: one full-screen pixel world on canvas; HTML cards float above it */
+  --rose:#ff5c93;
+  --rose-deep:#c42e68;
+  --blush:#ffe3ee;
+  --paper:#fffaf7;
+  --ink:#4a1d3a;
+  --muted:#8c5f78;
+  --font-display:"Pixelify Sans", ui-monospace, "Courier New", monospace;
+  --font-body:"Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-hand:"Caveat", "Segoe Script", "Bradley Hand", cursive;
+  --font-digits:"Press Start 2P", ui-monospace, "Courier New", monospace;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:#ffd6e5;color:var(--ink);font-family:var(--font-body);
+  overflow:hidden;touch-action:none;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
+}
+input{-webkit-user-select:text;user-select:text}
+#game{position:fixed;inset:0;display:block}
+
+#header{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 26px);padding:0 16px;text-align:center;pointer-events:none;color:var(--ink);z-index:2}
+#header h1{font-family:var(--font-display);font-weight:700;font-size:34px;line-height:1.05;margin:0;letter-spacing:.5px;text-wrap:balance}
+#header p{margin:8px 0 0;font-weight:800;font-size:15px;opacity:.85;font-variant-numeric:tabular-nums}
+
+#hint{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 18px);margin:0;padding:0 16px;text-align:center;font-weight:700;font-size:14px;color:var(--ink);opacity:.75;pointer-events:none;z-index:2}
+
+#toast{
+  position:fixed;left:50%;z-index:3;width:min(380px, calc(100vw - 32px));
+  transform:translate(-50%,-8px);opacity:0;transition:opacity .35s, transform .35s;
+  background:rgba(255,250,247,.95);border-radius:16px;padding:10px 14px;text-align:center;pointer-events:none;
+  box-shadow:0 0 0 2px #ffc2d8, 0 8px 22px rgba(120,30,80,.18);
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast strong{display:block;font-family:var(--font-body);font-weight:800;color:var(--rose-deep);font-size:15px}
+#toast span{display:block;font-size:14.5px;line-height:1.35;margin-top:3px;color:var(--ink);font-weight:700}
+
+#controls{position:fixed;right:calc(12px + env(safe-area-inset-right));display:none;gap:8px;z-index:4}
+#controls.show{display:flex}
+.icon{
+  width:40px;height:40px;border-radius:12px;padding:0;cursor:pointer;display:grid;place-items:center;
+  border:2px solid rgba(196,46,104,.3);background:rgba(255,250,247,.85);color:var(--rose-deep);
+}
+.icon svg{width:20px;height:20px;display:block}
+
+.overlay{
+  position:fixed;inset:0;display:none;overflow-y:auto;z-index:10;touch-action:pan-y;
+  padding:calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  background:rgba(58,16,48,.26);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
+}
+.overlay.show{display:flex}
+.card{
+  margin:auto;width:100%;max-width:400px;background:var(--paper);border-radius:22px;padding:22px 20px 20px;text-align:center;
+  box-shadow:0 0 0 3px #ffc2d8, 0 18px 44px rgba(90,20,60,.28);
+  display:flex;flex-direction:column;gap:12px;
+}
+.eyebrow{margin:0;font-family:var(--font-display);font-weight:500;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;color:var(--rose)}
+.title{margin:0;font-family:var(--font-display);font-weight:700;font-size:44px;line-height:1;color:var(--rose-deep);text-wrap:balance}
+.title.sm{font-size:30px}
+.count{display:flex;align-items:baseline;justify-content:center;gap:8px;font-family:var(--font-display);color:var(--ink)}
+.count .big{font-family:var(--font-digits);font-size:50px;line-height:1;color:var(--rose)}
+.count .unit{font-size:24px;font-weight:700}
+.days{margin:0;font-weight:800;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+.how{list-style:none;margin:2px 0 0;padding:12px 14px;background:var(--blush);border-radius:14px;text-align:left;display:flex;flex-direction:column;gap:7px;font-size:14.5px;line-height:1.35;font-weight:700}
+.how li{display:grid;grid-template-columns:22px 1fr;gap:6px;align-items:start}
+.how .ic{font-family:var(--font-display);color:var(--rose-deep);font-weight:700;text-align:center}
+.best{margin:0;font-size:14px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums}
+.best[hidden],.status[hidden],.btn[hidden]{display:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.row.tight{flex-wrap:nowrap;gap:8px}
+.btn{
+  font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:.3px;cursor:pointer;
+  border-radius:14px;padding:12px 16px;flex:1 1 140px;white-space:nowrap;transition:transform .08s, box-shadow .08s;
+}
+a.btn{display:block;text-decoration:none;text-align:center}
+.btn.primary{background:var(--rose);color:#fff;border:0;box-shadow:0 4px 0 var(--rose-deep)}
+.btn.primary:active{transform:translateY(3px);box-shadow:0 1px 0 var(--rose-deep)}
+.btn.ghost{background:#fff;color:var(--rose-deep);border:2px solid #ffc2d8;box-shadow:0 3px 0 #ffc2d8}
+.btn.ghost:active{transform:translateY(2px);box-shadow:0 1px 0 #ffc2d8}
+.btn.small{flex:0 0 auto;font-size:16px;padding:8px 14px}
+.btn.wide{flex:none;width:100%;font-size:21px;padding:14px 16px}
+.btn.wide.ghost{font-size:19px;padding:12px 16px}
+.btn.sub{flex:1 1 0;min-width:0;font-size:15px;padding:9px 6px}
+.btn:disabled{opacity:.5;cursor:default;box-shadow:none;transform:none}
+button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:var(--blush);font-weight:800;font-size:13.5px;color:var(--rose-deep);font-variant-numeric:tabular-nums}
+.chip.hot{background:#ffe9cc;color:#a24f08}
+.chip.ok{background:#dff5e8;color:#21714a}
+
+.scores{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.scores div{background:var(--blush);border-radius:14px;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.lbl{font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.num{font-family:var(--font-digits);font-size:24px;line-height:1.4;color:var(--rose-deep)}
+.badge{margin:0 auto;font-family:var(--font-display);font-weight:700;font-size:16px;color:#fff;background:var(--rose-deep);padding:5px 12px;border-radius:999px}
+.badge[hidden]{display:none}
+.journey{display:flex;flex-direction:column;gap:6px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.bar{height:12px;border-radius:6px;background:#ffe0ec;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ff8fbd,var(--rose));border-radius:6px}
+.journey p{margin:0;font-size:14.5px;font-weight:700;line-height:1.35}
+
+.minibox{background:var(--blush);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;text-align:left}
+.mhead{display:flex;justify-content:space-between;align-items:baseline;margin:0;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.mini{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.mini li{display:grid;grid-template-columns:20px 1fr auto;gap:8px;align-items:center;font-size:14px;font-weight:700;line-height:1.3}
+.ck{width:20px;height:20px;border-radius:6px;border:2px solid #f3a9c6;background:#fff;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.ck.on{background:var(--rose);border-color:var(--rose)}
+.pg{font-size:12.5px;font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.letter{text-align:left;background:
+  repeating-linear-gradient(to bottom, transparent 0 33px, rgba(255,92,147,.13) 33px 34px), var(--paper);}
+.letter .eyebrow{text-align:center}
+.letter-title{margin:0;font-family:var(--font-hand);font-weight:700;font-size:40px;line-height:1.05;color:var(--rose-deep);text-align:center;text-wrap:balance}
+.hand{font-family:var(--font-hand);font-weight:500;font-size:23px;line-height:1.28;color:var(--ink);display:flex;flex-direction:column;gap:8px;max-width:34ch}
+.hand p{margin:0}
+.sign{margin:4px 0 0;font-family:var(--font-hand);font-size:25px;line-height:1.2;text-align:right;color:var(--ink)}
+.sign b{font-size:34px;color:var(--rose-deep)}
+
+.memhead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.memhead h2{margin:0;font-family:var(--font-display);font-size:28px;color:var(--rose-deep)}
+.muted{margin:0;font-size:14px;font-weight:800;color:var(--muted);text-align:left;line-height:1.4}
+.memlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;text-align:left}
+.mem{display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center;background:#fff;border:2px solid #ffe0ec;border-radius:14px;padding:10px 12px}
+.mem .m{width:48px;height:48px;border-radius:12px;background:var(--rose);color:#fff;display:grid;place-items:center;font-family:var(--font-display);font-weight:700;font-size:18px;line-height:1}
+.mem .m small{display:block;font-size:10px;letter-spacing:1px;opacity:.9}
+.mem .d{font-family:var(--font-body);font-size:14px;color:var(--rose-deep);font-weight:800}
+.mem .t{font-size:14.5px;line-height:1.35;font-weight:700;margin-top:2px}
+.mem.locked{background:#fbf3f6;border-style:dashed}
+.mem.locked .m{background:#d8c3cd}
+.mem.locked .t{color:var(--muted)}
+.mem.letterrow{border-color:#ffc2d8;background:var(--blush)}
+.mem .open{margin-top:8px;font-size:15px;padding:7px 12px}
+
+.mlist{display:flex;flex-direction:column;gap:8px}
+.mission{background:#fff;border:2px solid #ffe0ec;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;text-align:left}
+.mission.done{border-color:#ffc2d8;background:var(--blush)}
+.mission .top{display:flex;justify-content:space-between;gap:10px;font-weight:800;font-size:15px;line-height:1.3}
+.mission .rw{font-size:13px;color:var(--rose-deep);white-space:nowrap}
+.mission .bar{height:10px;background:#fbe3ec}
+.note{border-radius:14px;padding:14px;background:var(--blush);text-align:left;display:flex;flex-direction:column;gap:4px}
+.note p{margin:0}
+.note .nlabel{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.note .ntext{font-family:var(--font-hand);font-size:26px;line-height:1.2;color:var(--ink)}
+.note .nfrom{font-family:var(--font-hand);font-size:23px;color:var(--rose-deep);text-align:right}
+.note.locked{background:#fbf3f6;border:2px dashed #f0d6e1}
+.note.locked .ntext{font-family:var(--font-body);font-size:14.5px;font-weight:700;color:var(--muted);line-height:1.4}
+.tips{margin:0;padding:0 0 0 18px;text-align:left;font-size:14px;font-weight:700;line-height:1.4;display:flex;flex-direction:column;gap:4px}
+
+.wgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.wcard{background:#fff;border:2px solid #ffe0ec;border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.wcard.on{border-color:var(--rose);background:#fff4f8}
+.wcard canvas{width:69px;height:90px;image-rendering:pixelated;background:var(--blush);border-radius:10px;padding:4px}
+.wcard .nm{font-weight:800;font-size:14px;text-align:center;line-height:1.25;min-height:36px;display:flex;align-items:center}
+.wcard .btn{width:100%;flex:none;font-family:var(--font-body);font-weight:800;font-size:14px;letter-spacing:0;padding:8px 6px}
+.coins{font-family:var(--font-digits);font-size:13px;color:var(--rose-deep)}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg .btn{flex:none}
+.seg .btn[aria-pressed="true"]{background:var(--rose);color:#fff;border-color:var(--rose);box-shadow:0 3px 0 var(--rose-deep)}
+.codebox{font-family:var(--font-digits);font-size:30px;letter-spacing:6px;color:var(--rose-deep);background:var(--blush);border-radius:14px;padding:16px 8px;line-height:1.2}
+.joinrow{display:flex;gap:8px}
+.joinrow input{flex:1;min-width:0;font-family:var(--font-digits);font-size:18px;letter-spacing:4px;text-transform:uppercase;padding:12px;border-radius:12px;border:2px solid #ffc2d8;background:#fff;color:var(--ink);text-align:center}
+.joinrow input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.joinrow .btn{flex:0 0 auto}
+.status{margin:0;font-weight:800;font-size:15px;line-height:1.4;color:var(--ink)}
+.status.err{color:#b3261e}
+
+@media (prefers-reduced-motion: reduce){
+  #toast{transition:none}
+  .btn{transition:none}
+}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Run to You, a little running game"></canvas>
+
+<header id="header">
+  <h1>Run to You</h1>
+  <p id="headSub"></p>
+</header>
+<p id="hint">Tap anywhere to jump · hold to jump higher</p>
+
+<div id="toast" role="status" aria-live="polite"><strong id="toastTitle"></strong><span id="toastText"></span></div>
+
+<div id="controls">
+  <button id="btnSound" class="icon" type="button" aria-label="Turn sound off"></button>
+  <button id="btnPause" class="icon" type="button" aria-label="Pause">
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><rect x="4" y="3" width="4" height="14" rx="1"/><rect x="12" y="3" width="4" height="14" rx="1"/></svg>
+  </button>
+</div>
+
+<section id="ovStart" class="overlay show" aria-label="Start">
+  <div class="card">
+    <p class="eyebrow">From Purest, with love</p>
+    <h2 class="title">Run to You</h2>
+    <div class="count"><span id="cMonths" class="big">0</span><span class="unit" id="cUnit">months</span></div>
+    <p id="cDays" class="days"></p>
+    <div class="chips" id="startChips"></div>
+    <ul class="how" id="howList">
+      <li><span class="ic">↑</span><span>Tap to jump. Hold to jump higher.</span></li>
+      <li><span class="ic">✿</span><span>Hop over the cacti, and don't jump into the grumpy clouds.</span></li>
+      <li><span class="ic">♥</span><span>Catch hearts in a row for combos. Love makes time fly.</span></li>
+      <li><span class="ic">✉</span><span id="howLetter">Run all the way to today. Someone is waiting for you there, with a letter.</span></li>
+    </ul>
+    <div id="startMissions"></div>
+    <p id="startBest" class="best"></p>
+    <button id="btnStart" class="btn primary wide" type="button">Start running</button>
+    <button id="btnTogether" class="btn ghost wide" type="button">Play together</button>
+    <div class="row tight">
+      <button class="btn ghost sub" type="button" data-open="missions">Missions</button>
+      <button class="btn ghost sub" type="button" data-open="wardrobe">Wardrobe</button>
+      <button class="btn ghost sub" type="button" data-open="memories">Memories</button>
+    </div>
+  </div>
+</section>
+
+<section id="ovCoop" class="overlay" aria-label="Play together">
+  <div class="card">
+    <div class="memhead"><h2>Play together</h2><button id="btnCoopBack" class="btn ghost small" type="button">Back</button></div>
+    <p class="muted">Run side by side on two phones. If one of you goes down, the other catches 3 hearts to bring them back. The run only ends when you are both down.</p>
+    <p class="mhead"><span>Who is playing on this phone?</span></p>
+    <div class="seg" role="group" aria-label="Who is playing on this phone">
+      <button id="roleHer" class="btn ghost" type="button" aria-pressed="true">Her</button>
+      <button id="rolePurest" class="btn ghost" type="button" aria-pressed="false">Purest</button>
+    </div>
+    <button id="btnCreate" class="btn primary wide" type="button">Create a room</button>
+    <p class="mhead"><span>Got a code from your love?</span></p>
+    <div class="joinrow">
+      <input id="joinCode" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" aria-label="Room code">
+      <button id="btnJoin" class="btn primary small" type="button">Join</button>
+    </div>
+    <p id="coopErr" class="status err" hidden></p>
+  </div>
+</section>
+
+<section id="ovRoom" class="overlay" aria-label="Room">
+  <div class="card">
+    <p class="eyebrow">Play together · room code</p>
+    <div class="codebox" id="roomCode">· · · ·</div>
+    <p id="roomStatus" class="status">Connecting…</p>
+    <div class="chips" id="roomChips"></div>
+    <div id="hostCtrls" class="stack">
+      <a id="btnInvite" class="btn ghost wide" href="#" target="_blank" rel="noopener">Send invite on WhatsApp</a>
+      <button id="btnStartCoop" class="btn primary wide" type="button" disabled>Start together</button>
+    </div>
+    <button id="btnLeave" class="btn ghost small" type="button">Leave room</button>
+  </div>
+</section>
+
+<section id="ovCoopOver" class="overlay" aria-label="Team run over">
+  <div class="card">
+    <p class="eyebrow" id="coEyebrow">Team run over</p>
+    <h2 class="title sm" id="coTitle"></h2>
+    <div class="scores">
+      <div><span class="lbl" id="coMeLbl">You</span><span id="coMe" class="num">0</span></div>
+      <div><span class="lbl" id="coPartLbl">Purest</span><span id="coPart" class="num">0</span></div>
+    </div>
+    <p id="coNew" class="badge" hidden>New team best!</p>
+    <div class="chips" id="coChips"></div>
+    <p id="coReach" class="best"></p>
+    <button id="btnCoopAgain" class="btn primary wide" type="button">Run again together</button>
+    <p id="coWait" class="status" hidden></p>
+    <button id="btnCoopLeave" class="btn ghost small" type="button">Leave room</button>
+  </div>
+</section>
+
+<section id="ovOver" class="overlay" aria-label="Game over">
+  <div class="card">
+    <p class="eyebrow" id="oEyebrow">Game over</p>
+    <h2 class="title sm" id="oTitle"></h2>
+    <div class="scores">
+      <div><span class="lbl">Score</span><span id="oScore" class="num">0</span></div>
+      <div><span class="lbl">Best</span><span id="oBest" class="num">0</span></div>
+    </div>
+    <p id="oNew" class="badge" hidden>New high score!</p>
+    <p id="oClose" class="best" hidden></p>
+    <div class="chips" id="oChips"></div>
+    <div class="journey"><div class="bar"><i id="oBar"></i></div><p id="oReach"></p></div>
+    <div id="oMissions"></div>
+    <p id="oRank" class="best"></p>
+    <button id="btnAgain" class="btn primary wide" type="button">Run again</button>
+    <div class="row tight">
+      <button class="btn ghost sub" type="button" data-open="missions">Missions</button>
+      <button class="btn ghost sub" type="button" data-open="wardrobe">Wardrobe</button>
+      <button class="btn ghost sub" type="button" data-open="memories">Memories</button>
+    </div>
+  </div>
+</section>
+
+<section id="ovLetter" class="overlay" aria-label="A letter for you">
+  <div class="card letter">
+    <p class="eyebrow" id="lEyebrow">You made it to today</p>
+    <h2 class="letter-title" id="lTitle"></h2>
+    <div class="hand" id="lBody"></div>
+    <p class="sign">Forever yours,<br><b id="lSign"></b></p>
+    <div class="row">
+      <button id="btnKeep" class="btn primary" type="button">Keep running</button>
+      <button id="btnLetterMem" class="btn ghost" type="button" data-open="memories">Memories</button>
+    </div>
+  </div>
+</section>
+
+<section id="ovMem" class="overlay" aria-label="Our months">
+  <div class="card">
+    <div class="memhead"><h2>Our months</h2><button class="btn ghost small" type="button" data-close>Close</button></div>
+    <p id="memCount" class="muted"></p>
+    <ol id="memList" class="memlist"></ol>
+  </div>
+</section>
+
+<section id="ovMissions" class="overlay" aria-label="Today's missions">
+  <div class="card">
+    <div class="memhead"><h2>Missions</h2><button class="btn ghost small" type="button" data-close>Close</button></div>
+    <p id="msStreak" class="muted"></p>
+    <div id="msList" class="mlist"></div>
+    <div id="msNote"></div>
+    <p class="muted">New missions every day at midnight. Each one pays +50 ♥, and finishing all three pays +100 ♥ more.</p>
+    <div class="minibox">
+      <p class="mhead"><span>How to play</span></p>
+      <ul class="tips">
+        <li>Tap to jump, hold to jump higher. High hearts need a full jump.</li>
+        <li>Catch hearts in a row for a combo, up to x5. Missing one resets it.</li>
+        <li>Golden hearts are rare: 50 days and 10 ♥ each.</li>
+        <li>Power-ups: Purest's hug saves you from one hit, the love magnet pulls hearts in, and double days doubles every point.</li>
+        <li>Clear a cactus by a whisker for a close-call bonus.</li>
+        <li>Play together on two phones. If one of you goes down, the other catches 3 hearts to bring them back.</li>
+        <li>Spend ♥ in the wardrobe on new outfits.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="ovWardrobe" class="overlay" aria-label="Wardrobe">
+  <div class="card">
+    <div class="memhead"><h2>Wardrobe</h2><button class="btn ghost small" type="button" data-close>Close</button></div>
+    <p class="muted">You have <span id="wCoins" class="coins"></span>. Earn more by catching hearts, finishing missions and playing every day.</p>
+    <div id="wGrid" class="wgrid"></div>
+  </div>
+</section>
+
+<section id="ovPause" class="overlay" aria-label="Paused">
+  <div class="card">
+    <h2 class="title sm">Paused</h2>
+    <p class="days">Take a breath. I'll wait for you.</p>
+    <div class="row"><button id="btnResume" class="btn primary" type="button">Keep running</button></div>
+  </div>
+</section>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------------- Our story ---------------- */
+const START = new Date(2025, 5, 11);   // 11 June 2025, the day we met
+const SIGNATURE = 'Purest';
+
+const NOTES = [
+  'The day we met. Everything started here.',
+  'One month in, and you already felt like home.',
+  'Two months of good mornings that actually felt good.',
+  'By now, my favourite notification had your name on it.',
+  'Every ordinary day got a little less ordinary with you.',
+  'You laughed at my silliest jokes. That is when I knew I was in trouble.',
+  'Half a year of us, and my heart had already made up its mind.',
+  'New year, same favourite person.',
+  'You make the hard days lighter and the good days golden.',
+  'Nine months of learning you, and you are still my favourite subject.',
+  'Double digits! And somehow I love you more than last month.',
+  'The 11th has become my favourite day of every month.',
+  'One whole year. I would choose you on every single one of those 365 days.',
+  'Year two began, and I am still falling, just slower and deeper.',
+  'You are my calm, even on the cloudy days.',
+  'Fifteen months, and you still give me butterflies.',
+  'Every road feels shorter when you are running beside me.',
+  'Seventeen months, and you are still the best thing that ever happened to me.',
+  'A year and a half of us. Here is to the next hundred.',
+  'Thank you for staying, for understanding, for being you.',
+  'Twenty months, and I would run every one of them again.',
+  'Still my favourite hello and my hardest goodbye.',
+  'Some people search their whole life. I found you.',
+  'Almost two years, and I still smile like it is the first month.',
+  'Two years. Forever does not feel long enough.'
+];
+const FUTURE = [
+  'Coming soon. I can\'t wait to spend this one with you.',
+  'Another 11th I am already looking forward to.',
+  'Not here yet. We will write this one together.',
+  'More of us, please.'
+];
+const PUREST_NOTES = [
+  'You are my favourite notification, every single time.',
+  'Your laugh is my favourite song. Play it again today?',
+  'Hug coupon: redeem any time, no expiry date.',
+  'I still get butterflies when you smile like that.',
+  'If I had to choose again, I would still run to you.',
+  'Thank you for being my calm on the busy days.',
+  'You owe me one big smile. Pay up when we meet.',
+  'I am proud of you. Always, always.',
+  'Every 11th is my favourite day, but today comes close.',
+  'You make ordinary days feel like a holiday.',
+  'Still choosing you. Today and every day after.',
+  'Good morning or good night, whichever it is, I love you.',
+  'One kiss, delivered by this game. Collect it in person.',
+  'You are the flower in my story.'
+];
+const noteFor = m => NOTES[m] || 'Another 11th, another month of loving you.';
+
+/* ---------------- Dates ---------------- */
+const DAY_MS = 86400000;
+const mid = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addMonths = (d, m) => new Date(d.getFullYear(), d.getMonth() + m, d.getDate());
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const daysBetween = (a, b) => Math.round((mid(b) - mid(a)) / DAY_MS);
+const fmt = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const fmtLong = d => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+const dateKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const todayKey = () => dateKey(new Date());
+
+const TODAY = mid(new Date());
+const TOTAL_DAYS = Math.max(1, daysBetween(START, TODAY));
+let MONTHS = (TODAY.getFullYear() - START.getFullYear()) * 12 + (TODAY.getMonth() - START.getMonth()) - (TODAY.getDate() < START.getDate() ? 1 : 0);
+MONTHS = Math.max(0, MONTHS);
+const EXTRA_DAYS = daysBetween(addMonths(START, MONTHS), TODAY);
+const IS_ELEVENTH = EXTRA_DAYS === 0 && MONTHS > 0;
+const monthDay = m => daysBetween(START, addMonths(START, m));
+const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
+
+/* ---------------- Storage (best effort) ---------------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('runToYou.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('runToYou.' + k, JSON.stringify(v)); } catch (e) {} }
+};
+let best = store.get('best', 0);
+let farthest = store.get('farthest', 0);
+let letterSeen = store.get('letterSeen', -1);
+let muted = store.get('muted', false);
+let coins = store.get('coins', 0);
+let owned = store.get('owned', ['berry']);
+if (!Array.isArray(owned)) owned = ['berry'];
+let outfit = store.get('outfit', 'berry');
+let streak = store.get('streak', { count: 0, last: '' });
+if (!streak || typeof streak.count !== 'number') streak = { count: 0, last: '' };
+let played = store.get('played', false);
+const saveCoins = () => store.set('coins', coins);
+
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------------- Daily missions ---------------- */
+function seeded(str) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return () => { h += 0x6D2B79F5; let t = h; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const MT = {
+  heartsRun: { text: n => 'Catch ' + n + ' hearts in one run', tiers: [8, 14, 20] },
+  heartsDay: { text: n => 'Catch ' + n + ' hearts today', tiers: [25, 45, 70] },
+  cactiRun:  { text: n => 'Jump over ' + n + ' cacti in one run', tiers: [12, 22, 35] },
+  combo:     { text: n => 'Build a x' + n + ' heart combo', tiers: [2, 3, 4] },
+  near:      { text: n => 'Pull off ' + n + ' close calls in one run', tiers: [2, 3, 5] },
+  powerDay:  { text: n => 'Pick up ' + n + ' power-ups today', tiers: [2, 3, 4] },
+  scoreRun:  { text: n => 'Score ' + n + ' in one run', tiers: [250, 500, 850] },
+  runsDay:   { text: n => 'Play ' + n + ' runs today', tiers: [3, 4, 5] },
+  cloudsRun: { text: n => 'Run under ' + n + ' grumpy clouds in one run', tiers: [3, 6, 9] },
+  golden:    { text: n => n === 1 ? 'Catch a golden heart' : 'Catch ' + n + ' golden hearts today', tiers: [1, 1, 2] }
+};
+const MISSION_REWARD = 50, ALL_REWARD = 100;
+function newDaily(key) {
+  const rnd = seeded('rty' + key);
+  const types = Object.keys(MT), pick = [];
+  while (pick.length < 3) { const t = types[Math.floor(rnd() * types.length)]; if (!pick.includes(t)) pick.push(t); }
+  const tier = best < 250 ? 0 : best < 600 ? 1 : 2;
+  return {
+    key, all: false, note: Math.floor(rnd() * PUREST_NOTES.length),
+    missions: pick.map(t => ({ type: t, target: MT[t].tiers[tier], progress: 0, done: false })),
+    c: { heartsDay: 0, powerDay: 0, runsDay: 0, golden: 0 }
+  };
+}
+let daily = store.get('daily', null);
+function ensureDaily() {
+  const k = todayKey();
+  if (!daily || daily.key !== k || !Array.isArray(daily.missions) || !daily.c) { daily = newDaily(k); store.set('daily', daily); }
+}
+ensureDaily();
+const saveDaily = () => store.set('daily', daily);
+function progress(type, value) {
+  const m = daily.missions.find(x => x.type === type);
+  if (!m || m.done) return;
+  if (value > m.progress) m.progress = value;
+  if (m.progress < m.target) return;
+  m.done = true; m.progress = m.target;
+  coins += MISSION_REWARD; saveCoins();
+  sfx.month();
+  if (state === 'play') toast('Mission complete · +' + MISSION_REWARD + ' ♥', MT[type].text(m.target), 2600);
+  if (!daily.all && daily.missions.every(x => x.done)) {
+    daily.all = true; coins += ALL_REWARD; saveCoins();
+    setTimeout(() => { if (state === 'play') toast('All 3 missions done · +' + ALL_REWARD + ' ♥', 'Purest left you a note. Open Missions to read it.', 3400); }, 2700);
+  }
+  saveDaily();
+}
+function touchStreak() {
+  const k = todayKey();
+  if (streak.last === k) return 0;
+  const y = dateKey(addDays(mid(new Date()), -1));
+  streak.count = streak.last === y ? streak.count + 1 : 1;
+  streak.last = k;
+  store.set('streak', streak);
+  const bonus = 20 * Math.min(streak.count, 7);
+  coins += bonus; saveCoins();
+  return bonus;
+}
+function streakAlive() {
+  const k = todayKey(), y = dateKey(addDays(mid(new Date()), -1));
+  return streak.count > 0 && (streak.last === k || streak.last === y);
+}
+
+/* ---------------- Ranks ---------------- */
+const RANKS = [[0, 'New crush'], [150, 'Sweetheart'], [350, 'Darling'], [600, 'Jaan'], [900, 'Soulmate'], [1300, 'Forever'], [2000, "Purest's whole world"]];
+function rankOf(s) { let i = 0; for (let k = 0; k < RANKS.length; k++) if (s >= RANKS[k][0]) i = k; return i; }
+function rankLine(s) {
+  const i = rankOf(s), next = RANKS[i + 1];
+  return 'Rank: ' + RANKS[i][1] + (next ? ' · ' + (next[0] - s) + ' more to ' + next[1] : ' · the top rank');
+}
+
+/* ---------------- Pixel sprites ---------------- */
+const PX = 3;
+function sprite(rows, pal, outline) {
+  const w = Math.max(...rows.map(r => r.length)), h = rows.length;
+  const c = document.createElement('canvas');
+  c.width = (w + 2) * PX; c.height = (h + 2) * PX;
+  const g = c.getContext('2d');
+  const filled = (x, y) => y >= 0 && y < h && x >= 0 && x < rows[y].length && !!pal[rows[y][x]];
+  if (outline) {
+    g.fillStyle = outline;
+    for (let y = -1; y <= h; y++) for (let x = -1; x <= w; x++) {
+      if (filled(x, y)) continue;
+      if (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)) g.fillRect((x + 1) * PX, (y + 1) * PX, PX, PX);
+    }
+  }
+  for (let y = 0; y < h; y++) for (let x = 0; x < rows[y].length; x++) {
+    const col = pal[rows[y][x]];
+    if (col) { g.fillStyle = col; g.fillRect((x + 1) * PX, (y + 1) * PX, PX, PX); }
+  }
+  return c;
+}
+
+/* Her: long dark hair, a white flower behind her ear. Faces right. */
+const GIRL_HEAD = [
+  '......HHHHHH......',
+  '....HHHHHHHHHH....',
+  '...HHHHHHHHHHHH...',
+  '..HHHHHHHHHHHHHH..',
+  '..HHHHHHHHHHHSSH..',
+  '.HHHHHHFHHSSSSSSS.',
+  '.HHHHHFYFHSSSSESS.',
+  '.HHHHHHFHSSSSSSSSS',
+  'HHHHHHHHHSSSKKSSS.',
+  'HHHHHHHHHSSSSSMMS.',
+  'HHHHHHHHHHSSSSSS..',
+  'HHHHHHHHH.SSSS....'
+];
+const GIRL_BODY = [
+  'HHHHHHHHPPPSPP....',
+  '.HHHHHHPPPPPPPP...',
+  '.HHHHHHPPPPPPPP...',
+  '..HHHHHPPPPPPPP...',
+  '..HHHHHPPPPPPPP...',
+  '...HHHHPPPPPPPP...',
+  '.......JJJJJJJJ...'
+];
+const GIRL_LEGS = {
+  stand: ['.......JJJJJJ.....', '.......JJJ.JJJ....', '.......JJJ.JJJ....', '.......JJJ.JJJ....', '......WWWW.WWWW...'],
+  a:     ['.......JJJJJJ.....', '......JJJ..JJJ....', '.....JJJ....JJJ...', '....JJ.......JJ...', '..WWW........WWWW.'],
+  b:     ['.......JJJJJJ.....', '.....JJJJJJJ......', '...JJJJ..JJJ......', '..WW.....JJJ......', '.........WWWW.....'],
+  jump:  ['.......JJJJJJ.....', '......JJJJJJJJ....', '.....JJJ....JJJ...', '....WWW......WWW..', '..................']
+};
+const GPAL = { H: '#2a1b1d', F: '#ffffff', Y: '#ffcf4a', S: '#e8ad86', E: '#2a1b1d', K: '#f2898f', M: '#c4405c', J: '#34304a', W: '#f5f1f3' };
+const GOUT = '#4f1a35';
+const OUTFITS = [
+  { id: 'berry', name: 'Berry tee', price: 0, P: '#b3135f' },
+  { id: 'sage', name: 'Sage stripes', price: 120, P: '#b5c693', Q: '#f4f0e2', pattern: 'stripes' },
+  { id: 'sunny', name: 'Sunshine', price: 250, P: '#f2b630' },
+  { id: 'twin', name: 'Twinning with Purest', price: 400, P: '#a9c7ec' },
+  { id: 'lavender', name: 'Lavender', price: 600, P: '#a184d6' },
+  { id: 'festive', name: 'Festive red', price: 900, P: '#c8102e', Q: '#f2c14e', pattern: 'trim' },
+  { id: 'starry', name: 'Starry night', price: 1300, P: '#272c69', Q: '#ffffff', pattern: 'stars' }
+];
+function girlFrame(o, legs, arm, hurt, swish) {
+  const rows = GIRL_HEAD.concat(GIRL_BODY, legs).map(r => r.split(''));
+  const set = (x, y, c) => { rows[y][x] = c; };
+  if (arm === 'fwd') { set(15, 14, 'P'); set(15, 15, 'S'); set(16, 15, 'S'); set(16, 16, 'S'); }
+  if (arm === 'back') { set(6, 14, 'P'); set(5, 15, 'S'); set(6, 15, 'S'); set(4, 16, 'S'); set(5, 16, 'S'); }
+  if (arm === 'up') { set(15, 13, 'P'); set(15, 12, 'S'); set(16, 12, 'S'); set(16, 11, 'S'); }
+  if (arm === 'side') { set(15, 14, 'P'); set(15, 15, 'S'); set(15, 16, 'S'); }
+  if (hurt) { set(13, 6, 'E'); set(14, 6, 'E'); set(14, 9, 'S'); }
+  if (swish) { set(1, 16, 'H'); set(2, 17, 'H'); set(0, 13, 'H'); }
+  for (let y = 0; y < rows.length; y++) for (let x = 0; x < rows[y].length; x++) {
+    if (rows[y][x] !== 'P') continue;
+    if (o.pattern === 'stripes' && x % 3 === 1) rows[y][x] = 'Q';
+    if (o.pattern === 'trim' && (y === 17 || y === 12)) rows[y][x] = 'Q';
+    if (o.pattern === 'stars' && (x * 7 + y * 5) % 11 === 0) rows[y][x] = 'Q';
+  }
+  return sprite(rows.map(r => r.join('')), Object.assign({}, GPAL, { P: o.P, Q: o.Q || o.P }), GOUT);
+}
+const girlCache = {};
+function girlSet(id) {
+  if (!girlCache[id]) {
+    const o = OUTFITS.find(x => x.id === id) || OUTFITS[0];
+    girlCache[id] = {
+      stand: girlFrame(o, GIRL_LEGS.stand, 'side'),
+      a: girlFrame(o, GIRL_LEGS.a, 'back'),
+      b: girlFrame(o, GIRL_LEGS.b, 'fwd', false, true),
+      jump: girlFrame(o, GIRL_LEGS.jump, 'up'),
+      hurt: girlFrame(o, GIRL_LEGS.stand, 'side', true)
+    };
+  }
+  return girlCache[id];
+}
+if (!OUTFITS.some(o => o.id === outfit) || !owned.includes(outfit)) outfit = 'berry';
+let GIRL = girlSet(outfit);
+
+/* Purest: wavy hair, a beard, a light blue shirt. Faces left, waiting at "today". */
+const VIKI_TOP = [
+  '......HHHHH.......',
+  '....HHHHHHHHH.....',
+  '...HHHHHHHHHHH....',
+  '..HHHHHHHHHHHHH...',
+  '..HSSHHHHHHHHHH...',
+  '.SSSSSSSHHHHHHHH..',
+  '.SSESSSSSHHHHHHH..',
+  'SSSSSSSSSSHHHHHH..',
+  '.SSSSSSSSSHHHHH...',
+  '.BBMMBBSSSSHHHH...',
+  '..BBBBBBSSSHH.....',
+  '....BBBSSS........',
+  '.....WCCCCCC......',
+  '....CCCCCCCCC.....',
+  '..CCCCCCCCCCC.....',
+  '.SS.CCCCCCCCC.....',
+  '....CCCCcCCCC.....',
+  '....CCCCCCCCC.....',
+  '.....GGGGGGGG.....'
+];
+const VIKI_LEGS = {
+  stand: ['.....GGGGGGGG.....', '.....GGG..GGG.....', '.....GGG..GGG.....', '.....GGG..GGG.....', '....DDDD.DDDD.....'],
+  walk:  ['.....GGGGGGGG.....', '....GGG....GGG....', '...GGG......GGG...', '...GG........GG...', '.DDDD........DDD..']
+};
+const VPAL = { H: '#24181a', S: '#d9a07a', E: '#24181a', B: '#2e2022', M: '#b5575f', W: '#ffffff', C: '#bcd2ee', c: '#9cb7dc', G: '#8f909c', D: '#3a2f30' };
+const VOUT = '#3d2a3a';
+const VIKI = { stand: sprite(VIKI_TOP.concat(VIKI_LEGS.stand), VPAL, VOUT), walk: sprite(VIKI_TOP.concat(VIKI_LEGS.walk), VPAL, VOUT) };
+
+const CPAL = { G: '#62c48f', d: '#3f9e6f', F: '#ff6fa3', Y: '#ffd35c' };
+const COUT = '#2c6a4d';
+const CACTUS_SMALL = sprite([
+  '....F.F....',
+  '...FFYFF...',
+  '....F.F....',
+  '....GGG....',
+  '...GGGGG...',
+  '...GGdGG...',
+  'G..GGdGG...',
+  'GG.GGdGG.G.',
+  'GG.GGdGG.GG',
+  'GG.GGdGG.GG',
+  'GGGGGdGG.GG',
+  '.GGGGdGGGGG',
+  '...GGdGGGG.',
+  '...GGdGG...',
+  '...GGdGG...',
+  '...GGdGG...',
+  '...GGdGG...',
+  '...GGdGG...'
+], CPAL, COUT);
+const CACTUS_TALL = sprite([
+  '.....F.F.....',
+  '....FFYFF....',
+  '.....F.F.....',
+  '.....GGG.....',
+  '....GGGGG....',
+  '....GGdGG....',
+  '....GGdGG....',
+  'GG..GGdGG....',
+  'GG..GGdGG..GG',
+  'GG..GGdGG..GG',
+  'GG..GGdGG..GG',
+  'GG..GGdGG..GG',
+  'GGGGGGdGG..GG',
+  '.GGGGGdGGGGGG',
+  '....GGdGGGGG.',
+  '....GGdGG....',
+  '....GGdGG....',
+  '....GGdGG....',
+  '....GGdGG....',
+  '....GGdGG....',
+  '....GGdGG....',
+  '....GGdGG....',
+  '....GGdGG....',
+  '....GGdGG....'
+], CPAL, COUT);
+const CLOUD = sprite([
+  '........KKKK..........',
+  '......KKKKKKKK........',
+  '...KKKKKKKKKKKKK......',
+  '..KKKKKKKKKKKKKKKKK...',
+  '.KKKKEKKKKKKEKKKKKKK..',
+  'KKKKKKEKKKKEKKKKKKKKK.',
+  'KKKKKEEKKKKEEKKKKKKKKK',
+  'KKKKKKKKMMMMKKKKKKKKKK',
+  '.KKKKKKKMKKMKKKKKKKKK.',
+  '..LLLLLLLLLLLLLLLLLL..'
+], { K: '#c9c3d8', L: '#a59fbb', E: '#4a3f5c', M: '#4a3f5c' }, '#6f6887');
+const HEART_ROWS = ['.RR.RR.', 'RWRRRRR', 'RRRRRRR', '.RRRRR.', '..RRR..', '...R...'];
+const HEART = sprite(HEART_ROWS, { R: '#ff4d7d', W: '#ffffff' }, '#a8204d');
+const HEART_GRAY = sprite(HEART_ROWS, { R: '#dcc8d2', W: '#f1e6eb' }, '#b39dab');
+const GOLD = sprite(HEART_ROWS, { R: '#ffc83d', W: '#fff6cf' }, '#a8740b');
+const PUFF = sprite([
+  '....WWWW......',
+  '..WWWWWWWW.WW.',
+  '.WWWWWWWWWWWWW',
+  'WWWWWWWWWWWWWW',
+  '.WWWWWWWWWWWW.'
+], { W: '#ffffff' }, null);
+const PU = {
+  shield: sprite(['..BBBBB..', '.BWW...B.', 'B..R.R..B', 'B.RRRRR.B', 'B.RRRRR.B', 'B..RRR..B', 'B...R...B', '.B.....B.', '..BBBBB..'], { B: '#6fcaf5', W: '#ffffff', R: '#ff4d7d' }, '#2f7fae'),
+  magnet: sprite(['SSS...SSS', 'SSS...SSS', 'RRR...RRR', 'RRR...RRR', 'RRR...RRR', 'RRRR.RRRR', '.RRRRRRR.', '..RRRRR..'], { S: '#e7e9f2', R: '#ff3b5c' }, '#8a1f33'),
+  double: sprite(['....Y....', '...YYY...', 'YYYYYYYYY', '.YYYYYYY.', '..YYWYY..', '.YYY.YYY.', 'YY.....YY'], { Y: '#ffc83d', W: '#ffffff' }, '#a8740b')
+};
+const PU_INFO = {
+  shield: { title: "Purest's hug", text: 'One free hit, on me.' },
+  magnet: { title: 'Love magnet', text: 'Hearts cannot resist you for a while.' },
+  double: { title: 'Double days', text: 'Time flies twice as fast. Every point counts double.' }
+};
+
+/* ---------------- Canvas & layout ---------------- */
+const $ = id => document.getElementById(id);
+const cv = $('game');
+const ctx = cv.getContext('2d');
+const header = $('header'), hint = $('hint'), toastEl = $('toast'), controls = $('controls');
+let W = 600, H = 400, S = 1, DPR = 1, GROUND = 330, HUD = 14;
+let stars = [], bgClouds = [], groundBits = [];
+const TILE = 960;
+
+function resize() {
+  const vw = window.innerWidth, vh = window.innerHeight;
+  S = Math.min(vw / 540, vh / 380);
+  W = vw / S; H = vh / S;
+  GROUND = H <= 520 ? Math.round(H - 58) : Math.round(H * 0.62);
+  HUD = Math.max(14, GROUND - 330);
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(vw * DPR); cv.height = Math.round(vh * DPR);
+  cv.style.width = vw + 'px'; cv.style.height = vh + 'px';
+  ctx.setTransform(S * DPR, 0, 0, S * DPR, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  buildScenery();
+  layoutHtml();
+}
+function layoutHtml() {
+  const hudCss = HUD * S;
+  const roomy = hudCss >= 150;
+  header.style.display = roomy ? '' : 'none';
+  toastEl.style.top = (roomy ? Math.max(hudCss - 86, 118) : (HUD + 50) * S) + 'px';
+  controls.style.top = ((HUD + 58) * S) + 'px';
+  hint.style.display = (H - GROUND) * S > 130 ? '' : 'none';
+}
+function buildScenery() {
+  stars = [];
+  const n = Math.min(170, Math.round(W * GROUND / 3600));
+  for (let i = 0; i < n; i++) stars.push({ x: Math.random() * W, y: Math.random() * (GROUND - 40), big: Math.random() < 0.14, ph: Math.random() * 6.28 });
+  bgClouds = [];
+  const c = Math.round(W / 170) + (GROUND > 600 ? 3 : 0);
+  for (let i = 0; i < c; i++) bgClouds.push({ x: Math.random() * W, y: 30 + Math.random() * Math.max(60, GROUND - 190), s: Math.random() < 0.4 ? 2 : 1.4, sp: 0.5 + Math.random() * 0.6 });
+  groundBits = [];
+  for (let i = 0; i < 60; i++) groundBits.push({ x: Math.random() * TILE, y: 9 + Math.floor(Math.random() * 9) * 3, w: Math.random() < 0.3 ? 9 : 3 });
+  for (let i = 0; i < 7; i++) groundBits.push({ x: Math.random() * TILE, flower: true, c: Math.random() < 0.5 ? '#ff6fa3' : '#ffd35c' });
+}
+
+/* ---------------- Day / night palette ---------------- */
+const hex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const DAYP = { skyTop: '#ffc4dc', skyBot: '#fff1e6', hillFar: '#ffd5e4', hillNear: '#ffbcd3', ground: '#fde4ec', line: '#b45a86', hud: '#8b2d5e' };
+const NIGHTP = { skyTop: '#130c32', skyBot: '#4c2b70', hillFar: '#2c1e58', hillNear: '#3b2769', ground: '#22183f', line: '#e9a8d4', hud: '#ffdcee' };
+const DAYC = {}, NIGHTC = {};
+for (const k in DAYP) { DAYC[k] = hex(DAYP[k]); NIGHTC[k] = hex(NIGHTP[k]); }
+function palette(n) {
+  const o = {};
+  for (const k in DAYC) {
+    const a = DAYC[k], b = NIGHTC[k];
+    o[k] = 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * n) + ',' + Math.round(a[1] + (b[1] - a[1]) * n) + ',' + Math.round(a[2] + (b[2] - a[2]) * n) + ')';
+  }
+  return o;
+}
+const CYCLE = TOTAL_DAYS * 2 / 3;            // so the sky is fully night when she reaches today
+const nightness = () => 0.5 - 0.5 * Math.cos(2 * Math.PI * score / CYCLE);
+
+/* ---------------- Sound ---------------- */
+let actx = null;
+function audio() {
+  if (muted) return null;
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (actx.state === 'suspended') actx.resume().catch(() => {});
+  return actx;
+}
+function tone(f, dur, type, vol, when, slide) {
+  const a = audio(); if (!a) return;
+  try {
+    const t = a.currentTime + (when || 0);
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'square';
+    o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.05, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(t); o.stop(t + dur + 0.03);
+  } catch (e) {}
+}
+const sfx = {
+  jump() { tone(400, 0.12, 'square', 0.035, 0, 760); },
+  heart() { tone(880, 0.08, 'triangle', 0.07); tone(1320, 0.14, 'triangle', 0.07, 0.07); },
+  gold() { [990, 1320, 1760].forEach((f, i) => tone(f, 0.12, 'triangle', 0.07, i * 0.06)); },
+  combo(m) { [520, 660, 780, 990, 1180].slice(0, m).forEach((f, i) => tone(f, 0.08, 'square', 0.035, i * 0.05)); },
+  power() { [440, 660, 880, 1320].forEach((f, i) => tone(f, 0.1, 'square', 0.04, i * 0.06)); },
+  shield() { tone(300, 0.22, 'triangle', 0.08, 0, 900); },
+  near() { tone(1400, 0.06, 'square', 0.03); tone(1800, 0.07, 'square', 0.03, 0.05); },
+  hit() { tone(190, 0.28, 'sawtooth', 0.06, 0, 70); },
+  month() { [660, 880, 1100].forEach((f, i) => tone(f, 0.13, 'triangle', 0.06, i * 0.09)); },
+  finale() { [523, 659, 784, 1046, 784, 1046, 1318].forEach((f, i) => tone(f, 0.24, 'triangle', 0.07, i * 0.15)); },
+  revive() { [523, 784, 1046, 1568].forEach((f, i) => tone(f, 0.18, 'triangle', 0.07, i * 0.1)); },
+  tick() { tone(660, 0.1, 'square', 0.04); },
+  go() { tone(990, 0.25, 'square', 0.05); },
+  over() { [392, 330, 262].forEach((f, i) => tone(f, 0.22, 'triangle', 0.06, i * 0.16)); }
+};
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+const SOUND_ON = '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 7h3l5-4v14l-5-4H3z"/><path d="M14 6.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const SOUND_OFF = '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 7h3l5-4v14l-5-4H3z"/><path d="M14 7l4 6M18 7l-4 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+function paintSound() { $('btnSound').innerHTML = muted ? SOUND_OFF : SOUND_ON; $('btnSound').setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off'); }
+
+/* ---------------- World motion (a pure function of time, so two phones agree) ---------------- */
+const SPEED0 = 360, ACC = 6, SPEED_MAX = 820, GRAV = 2600, JUMP_V = 900, CUT_V = 520, PTS_DIV = 42;
+const T_MAX = (SPEED_MAX - SPEED0) / ACC;
+const D_MAX = SPEED0 * T_MAX + 0.5 * ACC * T_MAX * T_MAX;
+const distAt = t => t <= 0 ? 0 : t <= T_MAX ? SPEED0 * t + 0.5 * ACC * t * t : D_MAX + SPEED_MAX * (t - T_MAX);
+const speedAtTime = t => Math.min(SPEED_MAX, SPEED0 + ACC * Math.max(0, t));
+const speedAtDist = x => x >= D_MAX ? SPEED_MAX : Math.sqrt(SPEED0 * SPEED0 + 2 * ACC * Math.max(0, x));
+
+/* ---------------- Game state ---------------- */
+let state = 'start', score = 0, speed = SPEED0, lives = 3, inv = 0, timer = 0, gt = 0, dist = 0;
+let obstacles = [], hearts = [], pups = [], parts = [], floats = [];
+let genX = 0, crng = Math.random;
+let shake = 0, flash = 0, lastMonth = 0, reachedToday = false, lastHit = 'cactus', idleT = 0, clock = 0;
+let shieldOn = false, magnetT = 0, doubleT = 0, combo = 0, mult = 1, run = null, bestAnnounced = false, tagT = 0, rankStart = 0;
+let meAlive = true, rv = 0, reviveSerial = 0, handledRevive = 0, revivesGiven = 0, reviveWaitUntil = 0, coopEndT = 0, lastCount = 99;
+const dino = { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0 };   // "dino" is the runner on this phone
+const viki = { mode: 'off', x: 0, dy: 0, anim: 0, sp: 300 };            // Purest as the solo-mode companion
+let hist = [], meetT = 0;
+let room = null;                                                          // the co-op room, when playing together
+const DBOX = [{ x: 20, y: 8, w: 34, h: 28 }, { x: 24, y: 40, w: 24, h: 20 }, { x: 20, y: 60, w: 26, h: 12 }];
+const multFor = c => c <= 0 ? 1 : Math.min(5, 1 + Math.floor((c - 1) / 3));
+const NAMES = { her: 'Her', purest: 'Purest' };
+const TAGS = { her: 'My love', purest: 'Purest' };
+const inCoop = () => !!(room && room.run);
+const slotFor = role => role === 'purest' ? 30 : 92;
+const partnerName = () => room && room.role ? TAGS[room.role === 'her' ? 'purest' : 'her'] : 'your love';
+const pron = () => room && room.role === 'purest' ? 'her' : 'him';
+
+function reset() {
+  score = 0; gt = 0; dist = 0; speed = SPEED0; lives = 3; inv = 0; floats = [];
+  lastMonth = 0; reachedToday = false; meAlive = true; rv = 0; reviveSerial = 0; handledRevive = 0; revivesGiven = 0; reviveWaitUntil = 0; coopEndT = 0; lastCount = 99;
+  shieldOn = false; magnetT = 0; doubleT = 0; combo = 0; mult = 1; tagT = 0;
+  run = { hearts: 0, cacti: 0, clouds: 0, near: 0, maxMult: 1, coins: 0, golden: 0, power: 0 };
+  bestAnnounced = best === 0; rankStart = rankOf(best);
+  dino.x = 44; dino.tx = 44; dino.dy = 0; dino.vy = 0; dino.ground = true; dino.buffer = 0;
+  viki.mode = 'off'; viki.dy = 0; hist = []; meetT = 0;
+  resetCourse(Math.floor(Math.random() * 1e9));
+}
+
+function part(o) { parts.push(Object.assign({ age: 0, g: 0, vx: 0, vy: 0 }, o)); }
+function burstHearts(x, y, n, gold) { for (let i = 0; i < n; i++) part({ k: gold ? 'g' : 'h', x, y, vx: (Math.random() - 0.5) * 180, vy: -90 - Math.random() * 170, g: 140, life: 0.9 + Math.random() * 0.7, s: 0.35 + Math.random() * 0.45 }); }
+function puff(x, y, n) { for (let i = 0; i < n; i++) part({ k: 'p', x, y, vx: (Math.random() - 0.7) * 120, vy: -20 - Math.random() * 60, g: 90, life: 0.4 + Math.random() * 0.3, s: Math.random() < 0.5 ? 3 : 6 }); }
+const CONF = ['#ff5c93', '#ffd35c', '#9fe3ff', '#c7a8ff', '#ffffff', '#ff9ec4'];
+function confetti(n) {
+  for (let i = 0; i < n; i++) part({ k: 'c', x: Math.random() * W, y: -30 + Math.random() * GROUND * 0.7, vx: (Math.random() - 0.5) * 70, vy: 40 + Math.random() * 110, g: 50, life: 2.6 + Math.random() * 1.6, s: 4 + Math.random() * 5, color: CONF[i % CONF.length], rot: Math.random() * 6, vr: (Math.random() - 0.5) * 9 });
+}
+function floatText(x, y, text, color) { floats.push({ x, y, text, color, age: 0, life: 1 }); }
+
+/* ---------------- The course: generated from a seed, in world coordinates ---------------- */
+function makeCactus(kind) {
+  if (kind === 'double') {
+    const sh = CACTUS_SMALL.height, th = CACTUS_TALL.height;
+    return { kind: 'cactus', w: 30 + CACTUS_TALL.width, h: th, yOff: th - 3, ph: 0, parts: [
+      { img: CACTUS_SMALL, ox: 0, oy: th - sh, box: { x: 6, y: 12, w: CACTUS_SMALL.width - 12, h: sh - 15 } },
+      { img: CACTUS_TALL, ox: 30, oy: 0, box: { x: 6, y: 12, w: CACTUS_TALL.width - 12, h: th - 15 } }
+    ] };
+  }
+  const img = kind === 'tall' ? CACTUS_TALL : CACTUS_SMALL;
+  return { kind: 'cactus', w: img.width, h: img.height, yOff: img.height - 3, ph: 0, parts: [{ img, ox: 0, oy: 0, box: { x: 6, y: 12, w: img.width - 12, h: img.height - 15 } }] };
+}
+function makeCloud() {
+  const gapBelow = 92 + crng() * 24;
+  return { kind: 'cloud', w: CLOUD.width, h: CLOUD.height, yOff: gapBelow + CLOUD.height, ph: crng() * 6, parts: [{ img: CLOUD, ox: 0, oy: 0, box: { x: 6, y: 6, w: CLOUD.width - 12, h: CLOUD.height - 12 } }] };
+}
+function makeHeart(cx, centerHeight) {
+  const gold = crng() < 0.07, ph = crng() * 6;
+  return { wx: cx - HEART.width / 2, yOff: centerHeight + HEART.height / 2, ph, gone: false, missed: false, gold };
+}
+function resetCourse(seed) {
+  crng = seeded('course-' + seed);
+  genX = 820; obstacles = []; hearts = []; pups = [];
+}
+function generateNext() {
+  const x = genX, v = speedAtDist(x), days = x / PTS_DIV;
+  const r = crng();
+  let o;
+  if (days > 50 && r < 0.2) o = makeCloud();
+  else if (days > 110 && r < 0.36) o = makeCactus('double');
+  else if (r < 0.68) o = makeCactus('small');
+  else o = makeCactus('tall');
+  o.wx = x;
+  obstacles.push(o);
+  const minGap = Math.max(340, v * 0.95);
+  const gap = minGap + crng() * minGap * 0.9;
+  const hi = crng(), lo = crng(), pu = crng(), puType = crng();
+  if (o.kind === 'cactus' && hi < 0.4) hearts.push(makeHeart(x + o.w / 2, 168));
+  if (lo < 0.38) hearts.push(makeHeart(x + o.w + gap * 0.4, 30));
+  if (days > 25 && pu < 0.05) {
+    const t = puType < 0.34 ? 'shield' : puType < 0.67 ? 'magnet' : 'double';
+    const high = crng() < 0.5;
+    pups.push({ wx: x + o.w + gap * 0.74, yOff: (high ? 118 : 34) + PU[t].height / 2, type: t, ph: crng() * 6, gone: false });
+  }
+  genX = x + o.w + gap;
+}
+function fillCourse() { let n = 0; while (genX < dist + W + 140 && n < 60) { generateNext(); n++; } }
+const sxOf = o => o.wx - dist;
+const bobOf = (ph, amp, f) => Math.sin(gt * f + ph) * amp;
+
+/* ---------------- Input ---------------- */
+function jump() {
+  if (dino.ground) {
+    dino.vy = -JUMP_V; dino.ground = false; dino.buffer = 0;
+    if (state === 'play') { sfx.jump(); puff(dino.x + 30, GROUND - 2, 4); }
+  } else dino.buffer = 0.13;
+}
+function press() { if (state === 'play' && meAlive && !(inCoop() && gt <= 0)) jump(); }
+function release() { if (!dino.ground && dino.vy < -CUT_V) dino.vy = -CUT_V; }
+
+cv.addEventListener('pointerdown', e => { e.preventDefault(); press(); });
+window.addEventListener('pointerup', release);
+window.addEventListener('pointercancel', release);
+window.addEventListener('keydown', e => {
+  const k = e.code;
+  if (e.target && (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'A') && (k === 'Space' || k === 'Enter' || e.target.tagName === 'INPUT')) return;
+  if (k === 'Space' || k === 'ArrowUp' || k === 'KeyW') {
+    e.preventDefault();
+    if (e.repeat) return;
+    if (state === 'play') press();
+    else if ((state === 'start' && current === 'ovStart') || (state === 'over' && current === 'ovOver')) startGame();
+  } else if ((k === 'KeyP' || k === 'Escape') && state === 'play') pauseGame();
+});
+window.addEventListener('keyup', e => { if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') release(); });
+
+/* ---------------- Overlays ---------------- */
+const OVERLAYS = ['ovStart', 'ovOver', 'ovLetter', 'ovMem', 'ovMissions', 'ovWardrobe', 'ovPause', 'ovCoop', 'ovRoom', 'ovCoopOver'];
+const PANELS = { memories: 'ovMem', missions: 'ovMissions', wardrobe: 'ovWardrobe' };
+let current = 'ovStart', panelReturn = 'ovStart', letterMode = 'game';
+function show(id) {
+  OVERLAYS.forEach(o => $(o).classList.toggle('show', o === id));
+  current = id;
+  controls.classList.toggle('show', id === null && state === 'play');
+  $('btnPause').style.display = inCoop() ? 'none' : '';
+  if (id && id !== 'ovCoop') { const b = $(id).querySelector('.btn.primary:not([disabled])') || $(id).querySelector('button'); if (b) setTimeout(() => { try { b.focus({ preventScroll: true }); } catch (e) {} }, 30); }
+}
+let toastTimer = 0;
+function toast(title, text, ms) {
+  $('toastTitle').textContent = title; $('toastText').textContent = text;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms || 3400);
+}
+function hideToast() { clearTimeout(toastTimer); toastEl.classList.remove('show'); }
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+function chip(text, kind) { return el('span', 'chip' + (kind ? ' ' + kind : ''), text); }
+
+function renderMini(box) {
+  ensureDaily();
+  box.innerHTML = '';
+  const wrap = el('div', 'minibox');
+  const head = el('p', 'mhead');
+  head.appendChild(el('span', '', "Today's missions"));
+  head.appendChild(el('span', '', daily.missions.filter(m => m.done).length + ' / 3 done'));
+  wrap.appendChild(head);
+  const ul = el('ul', 'mini');
+  daily.missions.forEach(m => {
+    const li = el('li');
+    li.appendChild(el('span', 'ck' + (m.done ? ' on' : ''), m.done ? '✓' : ''));
+    li.appendChild(el('span', '', MT[m.type].text(m.target)));
+    li.appendChild(el('span', 'pg', m.done ? '+50 ♥' : m.progress + '/' + m.target));
+    ul.appendChild(li);
+  });
+  wrap.appendChild(ul);
+  box.appendChild(wrap);
+}
+
+function fillStart() {
+  ensureDaily();
+  $('cMonths').textContent = MONTHS;
+  $('cUnit').textContent = MONTHS === 1 ? 'month' : 'months';
+  $('cDays').textContent = IS_ELEVENTH
+    ? 'Happy ' + MONTHS + '-month anniversary! ' + TOTAL_DAYS + ' days since ' + fmtLong(START) + '.'
+    : plural(MONTHS, 'month') + ' and ' + plural(EXTRA_DAYS, 'day') + ' since ' + fmtLong(START) + '.';
+  $('headSub').textContent = plural(MONTHS, 'month') + ' · ' + TOTAL_DAYS + ' days of us';
+  const chips = $('startChips'); chips.innerHTML = '';
+  if (streakAlive()) chips.appendChild(chip('🔥 ' + plural(streak.count, 'day') + ' streak', 'hot'));
+  chips.appendChild(chip('♥ ' + coins));
+  chips.appendChild(chip(RANKS[rankOf(best)][1]));
+  const first = !played && best === 0;
+  $('howList').style.display = first ? '' : 'none';
+  if (first) $('startMissions').innerHTML = ''; else renderMini($('startMissions'));
+  $('startBest').textContent = best > 0
+    ? 'Your best: ' + best + ' · farthest run: ' + fmt(addDays(START, farthest))
+    : 'Your very first run. No pressure, my love.';
+}
+
+function openLetter(mode) {
+  letterMode = mode;
+  $('lEyebrow').textContent = mode === 'game' ? 'You made it to today' : 'My letter to you';
+  $('lTitle').textContent = IS_ELEVENTH
+    ? 'Happy ' + MONTHS + ' months, my love'
+    : plural(MONTHS, 'month') + ' and ' + plural(EXTRA_DAYS, 'day') + ' of us';
+  const paras = [
+    'You just ran through all ' + TOTAL_DAYS + ' days of us, from ' + fmtLong(START) + ' to today.',
+    'Some days were easy and some had a few cacti, but I would run every one of them again, as long as it ends with you.',
+    'Thank you for every laugh, every long talk, and for choosing me again and again.',
+    'This little game is yours. Pin it, play it, beat your high score. Every month on the 11th it will count one more month of us.',
+    'Here is to all the days we have not run yet.'
+  ];
+  if (mode !== 'game') paras[0] = 'Every one of our ' + TOTAL_DAYS + ' days, from ' + fmtLong(START) + ' to today, is in this little game.';
+  const body = $('lBody'); body.innerHTML = '';
+  paras.forEach(t => body.appendChild(el('p', '', t)));
+  $('lSign').textContent = SIGNATURE;
+  $('btnKeep').textContent = mode === 'game' ? 'Keep running' : 'Close';
+  $('btnLetterMem').style.display = mode === 'game' ? '' : 'none';
+  show('ovLetter');
+}
+
+function renderMemories() {
+  const list = $('memList'); list.innerHTML = '';
+  const letterOpen = farthest >= TOTAL_DAYS;
+  const li = el('li', 'mem letterrow' + (letterOpen ? '' : ' locked'));
+  li.appendChild(el('div', 'm', '✉'));
+  const body = el('div');
+  body.appendChild(el('div', 'd', 'My letter to you'));
+  body.appendChild(el('div', 't', letterOpen ? 'Unlocked. Read it any time.' : 'Run all the way to today to open it.'));
+  if (letterOpen) {
+    const b = el('button', 'btn primary small open', 'Read my letter'); b.type = 'button';
+    b.addEventListener('click', () => openLetter('view'));
+    body.appendChild(b);
+  }
+  li.appendChild(body);
+  list.appendChild(li);
+  let unlocked = 0;
+  for (let m = 0; m <= MONTHS; m++) {
+    const date = addMonths(START, m), open = m === 0 || farthest >= monthDay(m);
+    if (open) unlocked++;
+    const row = el('li', 'mem' + (open ? '' : ' locked'));
+    const badge = el('div', 'm');
+    if (m === 0) badge.textContent = '♥'; else badge.innerHTML = '<span><small>MON</small>' + m + '</span>';
+    row.appendChild(badge);
+    const b2 = el('div');
+    b2.appendChild(el('div', 'd', (m === 0 ? 'The day we met · ' : 'Month ' + m + ' · ') + fmt(date)));
+    b2.appendChild(el('div', 't', open ? noteFor(m) : 'Run to ' + fmt(date) + ' to unlock this one.'));
+    row.appendChild(b2);
+    list.appendChild(row);
+  }
+  $('memCount').textContent = unlocked + ' of ' + (MONTHS + 1) + ' memories unlocked' + (unlocked < MONTHS + 1 ? '. Run further to collect the rest.' : '. You found them all.');
+}
+
+function renderMissions() {
+  ensureDaily();
+  const bonus = 20 * Math.min(Math.max(1, streak.count), 7);
+  $('msStreak').textContent = streak.last === todayKey()
+    ? '🔥 ' + plural(streak.count, 'day') + ' streak. Today\'s bonus: +' + bonus + ' ♥. It grows every day in a row, up to +140.'
+    : streakAlive()
+      ? '🔥 ' + plural(streak.count, 'day') + ' streak. Play today to keep it alive.'
+      : 'Play today to start a streak. Every day in a row grows your daily bonus, up to +140 ♥.';
+  const list = $('msList'); list.innerHTML = '';
+  daily.missions.forEach(m => {
+    const card = el('div', 'mission' + (m.done ? ' done' : ''));
+    const top = el('div', 'top');
+    top.appendChild(el('span', '', (m.done ? '✓ ' : '') + MT[m.type].text(m.target)));
+    top.appendChild(el('span', 'rw', m.done ? 'Done' : '+50 ♥'));
+    card.appendChild(top);
+    const bar = el('div', 'bar'); const fill = el('i'); fill.style.width = Math.round(m.progress / m.target * 100) + '%'; bar.appendChild(fill);
+    card.appendChild(bar);
+    card.appendChild(el('span', 'pg', m.progress + ' / ' + m.target));
+    list.appendChild(card);
+  });
+  const note = $('msNote'); note.innerHTML = '';
+  const n = el('div', 'note' + (daily.all ? '' : ' locked'));
+  n.appendChild(el('p', 'nlabel', "Today's note from Purest"));
+  if (daily.all) {
+    n.appendChild(el('p', 'ntext', PUREST_NOTES[daily.note % PUREST_NOTES.length]));
+    n.appendChild(el('p', 'nfrom', '— Purest'));
+  } else n.appendChild(el('p', 'ntext', 'Finish all three missions to open it. There is a new one every day.'));
+  note.appendChild(n);
+}
+
+function renderWardrobe() {
+  $('wCoins').textContent = '♥ ' + coins;
+  const grid = $('wGrid'); grid.innerHTML = '';
+  OUTFITS.forEach(o => {
+    const has = owned.includes(o.id), on = o.id === outfit;
+    const card = el('div', 'wcard' + (on ? ' on' : ''));
+    const pv = document.createElement('canvas');
+    const spr = girlSet(o.id).stand;
+    pv.width = spr.width; pv.height = spr.height;
+    pv.getContext('2d').drawImage(spr, 0, 0);
+    pv.setAttribute('aria-hidden', 'true');
+    card.appendChild(pv);
+    card.appendChild(el('div', 'nm', o.name));
+    const b = el('button', 'btn ' + (on || has ? 'ghost' : 'primary')); b.type = 'button';
+    if (on) { b.textContent = 'Wearing'; b.disabled = true; }
+    else if (has) b.textContent = 'Wear';
+    else if (coins >= o.price) b.textContent = 'Unlock ♥ ' + o.price;
+    else { b.textContent = 'Need ♥ ' + (o.price - coins) + ' more'; b.disabled = true; }
+    b.addEventListener('click', () => {
+      if (!owned.includes(o.id)) {
+        if (coins < o.price) return;
+        coins -= o.price; saveCoins();
+        owned.push(o.id); store.set('owned', owned);
+        sfx.power();
+      } else sfx.heart();
+      outfit = o.id; store.set('outfit', outfit); GIRL = girlSet(outfit);
+      renderWardrobe();
+    });
+    card.appendChild(b);
+    grid.appendChild(card);
+  });
+}
+
+function openPanel(name) {
+  const id = PANELS[name];
+  if (!Object.values(PANELS).includes(current)) panelReturn = current;
+  if (name === 'memories') renderMemories();
+  if (name === 'missions') renderMissions();
+  if (name === 'wardrobe') renderWardrobe();
+  show(id); $(id).scrollTop = 0;
+}
+function closePanel() {
+  if (panelReturn === 'ovLetter') { openLetter(letterMode); return; }
+  if (panelReturn === 'ovStart') fillStart();
+  if (panelReturn === 'ovOver') { renderMini($('oMissions')); $('oRank').textContent = rankLine(best); }
+  show(panelReturn || 'ovStart');
+}
+document.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openPanel(b.dataset.open)));
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closePanel));
+$('btnStart').addEventListener('click', startGame);
+$('btnAgain').addEventListener('click', startGame);
+$('btnKeep').addEventListener('click', () => {
+  if (letterMode === 'game') resumeAfterLetter();
+  else { renderMemories(); show('ovMem'); }
+});
+$('btnPause').addEventListener('click', pauseGame);
+$('btnResume').addEventListener('click', resumeGame);
+$('btnSound').addEventListener('click', () => { muted = !muted; store.set('muted', muted); paintSound(); if (!muted) sfx.heart(); });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) return;
+  saveCoins(); saveDaily();
+  if (state !== 'play') return;
+  if (inCoop()) { if (meAlive && gt > 0) { lives = 0; goDown(true); } }
+  else pauseGame();
+});
+window.addEventListener('resize', resize);
+
+/* ---------------- Solo flow ---------------- */
+function startGame() {
+  if (room) return;
+  audio();
+  ensureDaily();
+  reset();
+  state = 'play';
+  show(null);
+  daily.c.runsDay++; progress('runsDay', daily.c.runsDay); saveDaily();
+  const bonus = touchStreak();
+  if (bonus) toast('Daily love bonus · +' + bonus + ' ♥', '🔥 ' + plural(streak.count, 'day') + ' streak. Come back tomorrow to grow it.', 3400);
+  else toast('The day we met · ' + fmt(START), noteFor(0), 3000);
+}
+function pauseGame() { if (state !== 'play' || inCoop()) return; state = 'paused'; hideToast(); saveCoins(); saveDaily(); show('ovPause'); }
+function resumeGame() { state = 'play'; show(null); }
+function resumeAfterLetter() {
+  obstacles = obstacles.filter(o => sxOf(o) > dino.x + 460);
+  genX = Math.max(genX, dist + W + 200);
+  viki.mode = 'run'; dino.tx = 88; tagT = 5;
+  inv = 2; state = 'play'; show(null);
+  toast('Into our future', 'Now we run together. Every step from here is a day we have not lived yet.', 3400);
+}
+function saveFarthest() {
+  const d = Math.floor(score);
+  if (d > farthest) { farthest = d; store.set('farthest', farthest); }
+}
+function onMonth(m) {
+  sfx.month();
+  burstHearts(dino.x + 40, GROUND - 60 - dino.dy, REDUCED ? 4 : 10);
+  if (m <= MONTHS) toast('Month ' + m + ' · ' + fmt(addMonths(START, m)), noteFor(m));
+  else toast(fmt(addMonths(START, m)), FUTURE[(m - MONTHS - 1) % FUTURE.length]);
+  saveFarthest();
+}
+function onToday() {
+  reachedToday = true;
+  saveFarthest();
+  sfx.finale();
+  confetti(REDUCED ? 30 : 140);
+  burstHearts(dino.x + 40, GROUND - 60 - dino.dy, REDUCED ? 6 : 20);
+  if (inCoop()) { toast('Today · ' + fmt(TODAY), 'You made it to today together! Keep running into your future.', 3600); return; }
+  if (letterSeen !== MONTHS) {
+    letterSeen = MONTHS; store.set('letterSeen', letterSeen);
+    state = 'celebrate'; obstacles = []; hearts = []; pups = [];
+    genX = Math.max(genX, dist + W + 200);
+    viki.mode = 'enter'; viki.x = W + 10; viki.dy = 0; viki.anim = 0;
+    viki.sp = Math.max(300, (W + 10 - (dino.x + 60)) / 1.3);
+    hideToast();
+  } else {
+    viki.mode = 'run'; viki.x = -70; dino.tx = 88; tagT = 4;
+    toast('Today · ' + fmt(TODAY), 'You made it to today again. Now we run together.', 3200);
+  }
+}
+function onHit(o) {
+  o.hit = true;
+  if (shieldOn) {
+    shieldOn = false; inv = 1.1; flash = 0.12;
+    sfx.shield(); buzz(30);
+    puff(dino.x + 50, GROUND - 40 - dino.dy, 12);
+    floatText(dino.x + 30, dinoTop() - 16, "Purest's hug!", '#2f7fae');
+    return;
+  }
+  lastHit = o.kind;
+  lives--; inv = 1.6; shake = REDUCED ? 0 : 0.25; flash = 0.28;
+  combo = 0; mult = 1;
+  sfx.hit(); buzz(70);
+  puff(dino.x + 50, GROUND - 40 - dino.dy, 10);
+  if (lives <= 0) {
+    if (inCoop()) goDown(false);
+    else { state = 'dying'; timer = 0.9; hideToast(); sfx.over(); buzz([60, 40, 120]); }
+  }
+}
+function collectHeart(h) {
+  h.gone = true;
+  combo++;
+  const m = multFor(combo);
+  if (m > mult) { sfx.combo(m); floatText(dino.x + 30, dinoTop() - 30, 'x' + m + ' combo!', '#ff3d7f'); }
+  else if (h.gold) sfx.gold(); else sfx.heart();
+  mult = m;
+  run.maxMult = Math.max(run.maxMult, mult);
+  const gain = (h.gold ? 50 : 10) * mult * (doubleT > 0 ? 2 : 1);
+  score += gain;
+  const c = h.gold ? 10 : 1;
+  coins += c; run.coins += c;
+  run.hearts++; daily.c.heartsDay++;
+  const hx = h.wx - dist, hy = GROUND - h.yOff;
+  burstHearts(hx + 13, hy + 12, REDUCED ? 3 : (h.gold ? 12 : 7), h.gold);
+  floatText(hx + 13, hy - 6, '+' + gain + ' days', h.gold ? '#b7800a' : null);
+  progress('heartsRun', run.hearts);
+  progress('heartsDay', daily.c.heartsDay);
+  progress('combo', mult);
+  if (h.gold) { run.golden++; daily.c.golden++; progress('golden', daily.c.golden); }
+  if (canRevivePartner()) {
+    rv++;
+    if (rv >= 3) {
+      rv = 0; reviveSerial++; revivesGiven++; reviveWaitUntil = Date.now() + 2500;
+      sfx.revive(); buzz([40, 30, 40]);
+      floatText(slotFor(room.partner.role) + 30, GROUND - 110, 'Back to life!', '#ff3d7f');
+      toast('You brought ' + partnerName() + ' back!', 'Love wins again. Keep running, both of you.', 2600);
+      sendState();
+    }
+  }
+}
+function pickPower(p) {
+  p.gone = true;
+  run.power++; daily.c.powerDay++;
+  sfx.power();
+  if (p.type === 'shield') shieldOn = true;
+  if (p.type === 'magnet') magnetT = 8;
+  if (p.type === 'double') doubleT = 8;
+  toast(PU_INFO[p.type].title, PU_INFO[p.type].text, 2200);
+  burstHearts(p.wx - dist + 15, GROUND - p.yOff + 15, REDUCED ? 3 : 8, p.type === 'double');
+  progress('powerDay', daily.c.powerDay);
+}
+function gameOver() {
+  state = 'over';
+  played = true; store.set('played', true);
+  const s = Math.floor(score);
+  const prevBest = best;
+  const isNew = s > best;
+  if (isNew) { best = s; store.set('best', best); }
+  saveFarthest(); saveCoins(); saveDaily();
+  $('oScore').textContent = s; $('oBest').textContent = best; $('oNew').hidden = !isNew;
+  const rankNow = rankOf(best);
+  $('oEyebrow').textContent = rankNow > rankStart ? 'New rank: ' + RANKS[rankNow][1] : isNew ? 'Look at you go' : 'Game over';
+  const titles = lastHit === 'cloud'
+    ? ['A grumpy cloud got you', 'That cloud was jealous']
+    : ['Ouch, that cactus won', 'Oops! One more try?', 'So close, my love'];
+  $('oTitle').textContent = reachedToday ? 'You ran into our future' : titles[Math.floor(Math.random() * titles.length)];
+  const gapToBest = prevBest - s;
+  const close = !isNew && prevBest > 0 && gapToBest <= Math.max(60, prevBest * 0.2);
+  $('oClose').hidden = !close;
+  if (close) $('oClose').textContent = 'So close! Only ' + gapToBest + ' away from your best.';
+  const chips = $('oChips'); chips.innerHTML = '';
+  chips.appendChild(chip('+' + run.coins + ' ♥ earned'));
+  chips.appendChild(chip(plural(run.hearts, 'heart')));
+  if (run.maxMult > 1) chips.appendChild(chip('x' + run.maxMult + ' combo', 'hot'));
+  if (run.near > 0) chips.appendChild(chip(plural(run.near, 'close call')));
+  $('oBar').style.width = Math.min(100, s / TOTAL_DAYS * 100) + '%';
+  const reached = addDays(START, s);
+  $('oReach').textContent = reachedToday
+    ? 'You ran past today, all the way to ' + fmt(reached) + '.'
+    : 'You reached ' + fmt(reached) + '. Only ' + plural(TOTAL_DAYS - s, 'day') + ' left until today and my letter.';
+  renderMini($('oMissions'));
+  $('oRank').textContent = rankLine(best);
+  show('ovOver');
+}
+
+/* ---------------- Simulation ---------------- */
+function physics(dt) {
+  if (dino.buffer > 0) dino.buffer -= dt;
+  if (!dino.ground) {
+    dino.vy += GRAV * dt;
+    dino.dy -= dino.vy * dt;
+    if (dino.dy <= 0) {
+      dino.dy = 0; dino.vy = 0; dino.ground = true;
+      if (state === 'play' && meAlive && dino.buffer > 0) jump();
+    }
+  }
+}
+const overlap = (ax, ay, aw, ah, bx, by, bw, bh) => ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+const dinoTop = () => GROUND - 75 - dino.dy;
+function hitObstacle(o) {
+  const t = dinoTop(), top = GROUND - o.yOff + (o.kind === 'cloud' ? bobOf(o.ph, 3, 3) : 0), x = sxOf(o);
+  for (const p of o.parts) {
+    const bx = x + p.ox + p.box.x, by = top + p.oy + p.box.y;
+    for (const d of DBOX) if (overlap(dino.x + d.x, t + d.y, d.w, d.h, bx, by, p.box.w, p.box.h)) return true;
+  }
+  return false;
+}
+function touches(x, top, w, h) {
+  const t = dinoTop();
+  for (const d of DBOX) if (overlap(dino.x + d.x - 4, t + d.y - 4, d.w + 8, d.h + 8, x + 3, top + 3, w - 6, h - 6)) return true;
+  return false;
+}
+function trackPasses() {
+  for (const o of obstacles) {
+    if (o.passed) continue;
+    const x = sxOf(o);
+    if (o.kind === 'cactus' && x < dino.x + 46 && x + o.w > dino.x + 20) {
+      const top = GROUND - o.yOff;
+      let boxTop = Infinity;
+      for (const p of o.parts) boxTop = Math.min(boxTop, top + p.oy + p.box.y);
+      const clearance = boxTop - (dinoTop() + 72);
+      o.minGap = Math.min(o.minGap === undefined ? 999 : o.minGap, clearance);
+    }
+    if (x + o.w < dino.x + 20) {
+      o.passed = true;
+      if (!meAlive) continue;
+      if (o.kind === 'cactus') {
+        run.cacti++; progress('cactiRun', run.cacti);
+        if (!o.hit && o.minGap !== undefined && o.minGap < 16) {
+          run.near++;
+          const g = 5 * (doubleT > 0 ? 2 : 1);
+          score += g; sfx.near();
+          floatText(dino.x + 30, dinoTop() - 12, 'Close one! +' + g, '#7a3cc4');
+          progress('near', run.near);
+        }
+      } else if (o.kind === 'cloud' && !o.hit) { run.clouds++; progress('cloudsRun', run.clouds); }
+    }
+  }
+}
+function stepWorld(dt) {
+  const prevScore = score, prevDist = dist;
+  gt += dt; dist = distAt(gt); speed = speedAtTime(gt);
+  const dx = dist - prevDist;
+  if (meAlive) score += dx / PTS_DIV * (doubleT > 0 ? 2 : 1);
+  if (magnetT > 0) magnetT -= dt;
+  if (doubleT > 0) doubleT -= dt;
+  if (tagT > 0) tagT -= dt;
+  if (inv > 0) inv -= dt;
+  physics(dt);
+  dino.x += (dino.tx - dino.x) * Math.min(1, dt * 3);
+  if (viki.mode === 'run') {
+    viki.x += (30 - viki.x) * Math.min(1, dt * 3);
+    hist.push([gt, dino.dy]);
+    while (hist.length && hist[0][0] < gt - 0.5) hist.shift();
+    let v = 0;
+    for (const h of hist) { if (h[0] <= gt - 0.11) v = h[1]; else break; }
+    viki.dy = v;
+  }
+  fillCourse();
+  trackPasses();
+  obstacles = obstacles.filter(o => sxOf(o) + o.w > -40);
+  if (magnetT > 0 && meAlive) {
+    const k = Math.min(1, dt * 7);
+    for (const h of hearts) {
+      const x = h.wx - dist;
+      if (!h.gone && x < dino.x + 300 && x > dino.x - 20) { h.wx += (dist + dino.x + 22 - h.wx) * k; h.yOff += (dino.dy + 50 - h.yOff) * k; }
+    }
+  }
+  if (meAlive && inv <= 0) for (const o of obstacles) { if (!o.hit && hitObstacle(o)) { onHit(o); break; } }
+  if (state !== 'play') return;
+  if (meAlive) {
+    for (const h of hearts) {
+      if (h.gone) continue;
+      const img = h.gold ? GOLD : HEART, x = h.wx - dist;
+      if (touches(x, GROUND - h.yOff + bobOf(h.ph, 4, 4), img.width, img.height)) collectHeart(h);
+      else if (!h.missed && x + img.width < dino.x + 14) { h.missed = true; combo = 0; mult = 1; }
+    }
+    for (const p of pups) {
+      if (!p.gone && touches(p.wx - dist, GROUND - p.yOff + bobOf(p.ph, 4, 4), PU[p.type].width, PU[p.type].height)) pickPower(p);
+    }
+  }
+  hearts = hearts.filter(h => h.wx - dist > -40 && !h.gone);
+  pups = pups.filter(p => p.wx - dist > -40 && !p.gone);
+  if (meAlive) milestones(prevScore);
+}
+function milestones(prev) {
+  const d1 = Math.floor(score);
+  if (d1 <= Math.floor(prev)) return;
+  progress('scoreRun', d1);
+  if (!bestAnnounced && d1 > best) {
+    bestAnnounced = true; sfx.combo(5);
+    toast('New high score!', 'Every step from here is a new record. Keep going!', 2400);
+  }
+  let m = lastMonth + 1, crossed = 0;
+  while (monthDay(m) <= d1) { crossed = m; m++; }
+  if (crossed) { lastMonth = crossed; onMonth(crossed); }
+  if (!reachedToday && d1 >= TOTAL_DAYS) onToday();
+}
+function updateFx(dt) {
+  clock += dt;
+  for (const p of parts) { p.age += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.rot !== undefined) p.rot += p.vr * dt; }
+  parts = parts.filter(p => p.age < p.life);
+  for (const f of floats) { f.age += dt; f.y -= 40 * dt; }
+  floats = floats.filter(f => f.age < f.life);
+  if (shake > 0) shake -= dt;
+  if (flash > 0) flash -= dt * 1.6;
+  const drift = state === 'play' ? speed * 0.12 : 10;
+  for (const c of bgClouds) { c.x -= drift * c.sp * dt; if (c.x < -100) { c.x = W + 20 + Math.random() * 80; } }
+}
+function tick(dt) {
+  if (state === 'play') { if (inCoop()) coopTick(dt); else stepWorld(dt); }
+  else if (state === 'dying') { physics(dt); timer -= dt; if (timer <= 0) gameOver(); }
+  else if (state === 'celebrate') {
+    physics(dt);
+    if (viki.mode === 'enter') {
+      viki.anim += dt * 9;
+      viki.x -= viki.sp * dt;
+      if (viki.x <= dino.x + 60) {
+        viki.x = dino.x + 60; viki.mode = 'meet'; meetT = 0;
+        sfx.heart(); burstHearts(dino.x + 60, GROUND - 80, REDUCED ? 6 : 18);
+      }
+    } else if (viki.mode === 'meet') {
+      meetT += dt;
+      if (meetT > 1.6) { state = 'letter'; openLetter('game'); }
+    }
+  }
+  else if (state === 'start') {
+    physics(dt);
+    idleT += dt;
+    if (idleT > 2.6 && dino.ground) { idleT = 0; dino.vy = -560; dino.ground = false; }
+  }
+  else if (state === 'over' && inCoop()) physics(dt);
+  updateFx(dt);
+}
+
+/* ---------------- Playing together (two phones) ---------------- */
+const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+let myRole = store.get('role', 'her') === 'purest' ? 'purest' : 'her';
+const NET = {
+  id: 'p' + Math.random().toString(36).slice(2, 10),
+  client: null, base: '',
+  ready() { return !!(this.client && this.client.connected); },
+  send(type, data) {
+    if (!this.ready()) return;
+    try { this.client.publish(this.base + '/' + type, JSON.stringify(Object.assign({ from: this.id }, data)), { qos: 0 }); } catch (e) {}
+  },
+  close() {
+    const c = this.client; this.client = null;
+    if (!c) return;
+    try { c.publish(this.base + '/bye', JSON.stringify({ from: this.id }), { qos: 0 }); } catch (e) {}
+    setTimeout(() => { try { c.end(true); } catch (e) {} }, 150);
+  }
+};
+function brokerList() { const o = store.get('brokers', null); return Array.isArray(o) && o.length ? o : BROKERS; }
+let mqttLoading = null;
+function loadMqtt() {
+  if (window.mqtt) return Promise.resolve(window.mqtt);
+  if (mqttLoading) return mqttLoading;
+  const srcs = ['mqtt.min.js', 'https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js', 'https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js'];
+  mqttLoading = new Promise((resolve, reject) => {
+    let i = 0;
+    const next = () => {
+      if (window.mqtt) { resolve(window.mqtt); return; }
+      if (i >= srcs.length) { mqttLoading = null; reject(new Error('lib')); return; }
+      const s = document.createElement('script');
+      s.src = srcs[i++]; s.async = true;
+      s.onload = () => { if (window.mqtt) resolve(window.mqtt); else next(); };
+      s.onerror = next;
+      document.head.appendChild(s);
+    };
+    next();
+  });
+  return mqttLoading;
+}
+function connectBroker(url) {
+  return loadMqtt().then(M => new Promise((resolve, reject) => {
+    const connect = M.connect || (M.default && M.default.connect);
+    let done = false, c = null;
+    const fail = () => { if (done) return; done = true; clearTimeout(tm); try { if (c) c.end(true); } catch (e) {} reject(new Error('connect')); };
+    const tm = setTimeout(fail, 8500);
+    try { c = connect(url, { clientId: 'rty_' + NET.id + '_' + Math.random().toString(36).slice(2, 6), clean: true, connectTimeout: 7000, reconnectPeriod: 2500, keepalive: 30 }); }
+    catch (e) { fail(); return; }
+    c.on('connect', () => { if (done) return; done = true; clearTimeout(tm); resolve(c); });
+    c.on('error', fail);
+  }));
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const validOutfit = id => OUTFITS.some(o => o.id === id) ? id : 'berry';
+const partnerHere = () => !!(room && room.partner && Date.now() - room.partner.last < 5000);
+const partnerInRun = () => partnerHere() && room.partner.run === room.run;
+function canRevivePartner() { return inCoop() && partnerInRun() && !room.partner.alive && meAlive && Date.now() > reviveWaitUntil; }
+function shareUrl() { return location.href.split('#')[0] + '#' + room.code; }
+
+function paintRoles() {
+  $('roleHer').setAttribute('aria-pressed', String(myRole === 'her'));
+  $('rolePurest').setAttribute('aria-pressed', String(myRole === 'purest'));
+}
+function openCoop(err) {
+  paintRoles();
+  $('coopErr').hidden = !err; if (err) $('coopErr').textContent = err;
+  show('ovCoop');
+}
+$('btnTogether').addEventListener('click', () => { audio(); openCoop(); });
+$('btnCoopBack').addEventListener('click', () => { fillStart(); show('ovStart'); });
+$('roleHer').addEventListener('click', () => { myRole = 'her'; store.set('role', myRole); paintRoles(); });
+$('rolePurest').addEventListener('click', () => { myRole = 'purest'; store.set('role', myRole); paintRoles(); });
+$('btnCreate').addEventListener('click', () => {
+  audio();
+  let c = '';
+  for (let i = 0; i < 4; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  openRoom(c, true, myRole, 0);
+});
+function tryJoin() {
+  audio();
+  const c = $('joinCode').value.trim().toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1').replace(/[^A-Z0-9]/g, '');
+  if (!/^[A-Z2-9]{4}[0-9]$/.test(c)) { openCoop('That code does not look right. It has 5 characters, like K7QD0.'); return; }
+  openRoom(c, false, null, +c[4]);
+}
+$('btnJoin').addEventListener('click', tryJoin);
+$('joinCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tryJoin(); } });
+$('btnLeave').addEventListener('click', leaveRoom);
+$('btnCoopLeave').addEventListener('click', leaveRoom);
+$('btnStartCoop').addEventListener('click', hostStart);
+$('btnCoopAgain').addEventListener('click', hostStart);
+
+async function openRoom(code, host, role, brokerIdx) {
+  if (room) NET.close();
+  const me = room = { code, host, role, partner: null, synced: host, offset: 0, bestRtt: 0, samples: 0, syncing: false, run: 0, t0Local: 0, status: 'Connecting…', err: false, offline: false };
+  renderRoom(); show('ovRoom');
+  const list = brokerList();
+  let client = null, idx = brokerIdx;
+  if (host) {
+    for (let i = 0; i < list.length && !client && room === me; i++) {
+      try { client = await connectBroker(list[i]); idx = i; } catch (e) {}
+    }
+  } else {
+    try { client = await connectBroker(list[idx] || list[0]); } catch (e) {}
+  }
+  if (room !== me) { if (client) try { client.end(true); } catch (e) {} return; }
+  if (!client) {
+    me.err = true;
+    me.status = 'Could not reach the game server. Check your internet and try again.';
+    renderRoom(); return;
+  }
+  if (host) me.code = code + idx;
+  NET.client = client;
+  NET.base = 'runtoyou/v1/' + me.code;
+  client.subscribe(NET.base + '/+', { qos: 0 });
+  client.on('message', onNetMessage);
+  client.on('offline', () => { if (room === me) { me.offline = true; renderRoom(); } });
+  client.on('connect', () => { if (room === me) { me.offline = false; client.subscribe(NET.base + '/+', { qos: 0 }); sendHi(); renderRoom(); } });
+  try { history.replaceState(null, '', '#' + me.code); } catch (e) {}
+  sendHi();
+  renderRoom();
+}
+function leaveRoom() {
+  NET.close();
+  room = null;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  state = 'start'; hideToast(); reset();
+  fillStart(); show('ovStart');
+}
+function renderRoom() {
+  if (!room) return;
+  const full = room.code.length === 5;
+  $('roomCode').textContent = full ? room.code : '· · · ·';
+  const p = partnerHere() ? room.partner : null;
+  let st = room.status;
+  if (!room.err) {
+    if (room.offline) st = 'Reconnecting…';
+    else if (full && NET.ready()) {
+      if (room.host) st = p ? partnerName() + ' is here! Tap Start when you are both ready.' : 'Send the invite, then wait here for ' + partnerName() + ' to join.';
+      else st = p ? 'You are in! Waiting for ' + partnerName() + ' to start the run…' : 'Looking for the room… Make sure the other phone is still on the room screen.';
+    }
+  }
+  $('roomStatus').textContent = st;
+  $('roomStatus').classList.toggle('err', !!room.err);
+  const chips = $('roomChips'); chips.innerHTML = '';
+  chips.appendChild(chip('You: ' + (room.role ? NAMES[room.role] : '…'), 'ok'));
+  chips.appendChild(p ? chip(NAMES[p.role] + ': here', 'ok') : chip(room.host ? 'Waiting for ' + partnerName() : 'Not connected yet'));
+  $('hostCtrls').style.display = room.host && full && !room.err ? '' : 'none';
+  if (full) $('btnInvite').href = 'https://wa.me/?text=' + encodeURIComponent('Come run with me! 💗 Tap to join our game (room ' + room.code + '): ' + shareUrl());
+  $('btnStartCoop').disabled = !p || !NET.ready();
+  $('btnStartCoop').textContent = p && !p.synced ? 'Start together (syncing…)' : 'Start together';
+}
+function sendHi() {
+  if (!room) return;
+  NET.send('hi', { role: room.role, host: room.host, outfit, synced: room.host || room.synced, run: room.run || 0 });
+}
+function sendState() {
+  if (!inCoop()) return;
+  NET.send('st', {
+    run: room.run, gt: Math.round(gt * 100) / 100, dy: Math.round(dino.dy), alive: meAlive, lives, inv: inv > 0,
+    score: Math.floor(score), outfit, rv, rs: reviveSerial, rto: room.partner ? room.partner.id : ''
+  });
+}
+function ensurePartner(id) {
+  if (!room.partner || room.partner.id !== id) {
+    room.partner = { id, role: 'purest', outfit: 'berry', last: Date.now(), alive: true, lives: 3, inv: false, score: 0, dy: 0, dyShown: 0, rv: 0, rs: 0, run: 0, synced: false };
+    if (state !== 'play') sfx.heart();
+  }
+  return room.partner;
+}
+function startSync() {
+  room.syncing = true;
+  let k = 0;
+  const me = room;
+  const iv = setInterval(() => {
+    if (room !== me || k++ >= 8 || me.samples >= 5) { clearInterval(iv); me.syncing = false; return; }
+    NET.send('ping', { t: Date.now() });
+  }, 220);
+}
+function onNetMessage(topic, payload) {
+  if (!room) return;
+  let m;
+  try { m = JSON.parse(payload.toString()); } catch (e) { return; }
+  if (!m || typeof m !== 'object' || typeof m.from !== 'string' || m.from === NET.id) return;
+  const type = topic.slice(topic.lastIndexOf('/') + 1);
+  const now = Date.now();
+  if (type === 'hi') {
+    const role = m.role === 'purest' ? 'purest' : 'her';
+    if (room.host === !!m.host) return;                                     // one host, one guest
+    if (room.partner && room.partner.id !== m.from && partnerHere()) return; // room is full
+    if (!room.host) room.role = role === 'her' ? 'purest' : 'her';           // guest takes the other runner
+    const p = ensurePartner(m.from);
+    p.role = room.role === 'her' ? 'purest' : 'her';
+    p.outfit = validOutfit(m.outfit); p.synced = !!m.synced; p.last = now;
+    if (!room.host && !room.synced && !room.syncing) startSync();
+    if (current === 'ovRoom') renderRoom();
+    return;
+  }
+  if (type === 'ping') { if (room.host) NET.send('pong', { to: m.from, t: +m.t || 0, ht: Date.now() }); return; }
+  if (type === 'pong') {
+    if (room.host || m.to !== NET.id) return;
+    const rtt = now - (+m.t || 0);
+    if (!(rtt >= 0 && rtt < 10000)) return;
+    const off = (+m.ht || 0) + rtt / 2 - now;
+    if (!room.samples || rtt < room.bestRtt) { room.bestRtt = rtt; room.offset = off; }
+    room.samples++;
+    if (room.samples >= 2 && !room.synced) { room.synced = true; sendHi(); }
+    return;
+  }
+  if (type === 'start') {
+    if (room.host || !room.partner || m.from !== room.partner.id) return;
+    const run = +m.run, seed = +m.seed, t0 = +m.t0;
+    if (!run || run === room.run || !isFinite(seed) || !isFinite(t0)) return;
+    const offset = room.synced ? room.offset : (t0 - 3600) - (now - 150);
+    beginCoopRun(seed, t0 - offset, run);
+    return;
+  }
+  if (type === 'st') {
+    const p = room.partner;
+    if (!p || p.id !== m.from) return;
+    const wasAlive = p.alive && p.run === room.run;
+    p.last = now; p.run = +m.run || 0;
+    p.dy = clamp(+m.dy || 0, 0, 400); p.alive = !!m.alive; p.lives = clamp(m.lives | 0, 0, 3); p.inv = !!m.inv;
+    p.score = clamp(m.score | 0, 0, 1e7); p.outfit = validOutfit(m.outfit); p.rv = clamp(m.rv | 0, 0, 3); p.rs = m.rs | 0;
+    if (inCoop() && p.run === room.run && state === 'play') {
+      if (wasAlive && !p.alive && meAlive) { toast(partnerName() + ' is down!', 'Catch 3 hearts to bring ' + pron() + ' back.', 3000); sfx.hit(); buzz(50); }
+      if (m.rto === NET.id && p.rs > handledRevive) { handledRevive = p.rs; if (!meAlive) reviveMe(); }
+    }
+    return;
+  }
+  if (type === 'bye') {
+    if (!room.partner || room.partner.id !== m.from) return;
+    room.partner.last = 0;
+    if (state === 'play' && inCoop()) toast(partnerName() + ' left the game', meAlive ? 'Keep running, you can still finish this run.' : 'The run is over.', 3000);
+    if (current === 'ovRoom') renderRoom();
+    if (current === 'ovCoopOver') fillCoopOver();
+  }
+}
+function hostStart() {
+  if (!room || !room.host || !NET.ready() || !partnerHere()) return;
+  const run = Date.now(), seed = Math.floor(Math.random() * 1e9), t0 = Date.now() + 3600;
+  const msg = { run, seed, t0 };
+  NET.send('start', msg);
+  setTimeout(() => NET.send('start', msg), 400);
+  setTimeout(() => NET.send('start', msg), 1000);
+  beginCoopRun(seed, t0, run);
+}
+function beginCoopRun(seed, t0Local, runId) {
+  if (!room) return;
+  audio(); ensureDaily();
+  reset();
+  resetCourse(seed);
+  room.run = runId; room.t0Local = t0Local;
+  if (!room.role) room.role = 'her';
+  dino.x = dino.tx = slotFor(room.role);
+  gt = Math.min(0, (Date.now() - t0Local) / 1000);
+  bestAnnounced = true;
+  if (room.partner) Object.assign(room.partner, { alive: true, lives: 3, rv: 0, rs: 0, dy: 0, dyShown: 0 });
+  state = 'play'; show(null);
+  daily.c.runsDay++; progress('runsDay', daily.c.runsDay); saveDaily();
+  const bonus = touchStreak();
+  if (bonus) toast('Daily love bonus · +' + bonus + ' ♥', '🔥 ' + plural(streak.count, 'day') + ' streak. Come back tomorrow to grow it.', 3400);
+  else toast('Run together', 'Stay alive for each other. If one of you falls, the other catches 3 hearts.', 3400);
+}
+function goDown(stepped) {
+  meAlive = false; combo = 0; mult = 1; inv = 0; shieldOn = false; magnetT = 0; doubleT = 0;
+  sfx.over(); buzz([60, 40, 120]);
+  toast(stepped ? 'You left the game, so you went down' : 'You\'re down!', partnerInRun() && room.partner.alive ? partnerName() + ' can bring you back by catching 3 hearts.' : 'Hold on…', 3400);
+  sendState();
+}
+function reviveMe() {
+  meAlive = true; lives = 1; inv = 2.5;
+  sfx.revive(); buzz([40, 30, 40]);
+  burstHearts(dino.x + 30, GROUND - 60, REDUCED ? 6 : 18);
+  toast(partnerName() + ' brought you back to life!', 'One life left. Make it count, my love.', 3000);
+  sendState();
+}
+function coopTick(dt) {
+  const target = (Date.now() - room.t0Local) / 1000;
+  if (target < 0) {
+    gt = target;
+    const c = Math.ceil(-target);
+    if (c !== lastCount && c <= 3) { lastCount = c; sfx.tick(); }
+  } else {
+    if (gt < 0) { gt = 0; sfx.go(); }
+    if (target - gt > 1.5) gt = target - 0.02;
+    let n = 0;
+    while (gt < target - 0.0005 && n < 60 && state === 'play') { stepWorld(Math.min(1 / 60, target - gt)); n++; }
+  }
+  const p = room.partner;
+  if (p) p.dyShown += (p.dy - p.dyShown) * Math.min(1, dt * 14);
+  if (state !== 'play') return;
+  const partnerAlive = partnerInRun() && p.alive;
+  if (gt > 0 && !meAlive && !partnerAlive) { coopEndT += dt; if (coopEndT > 1.4) coopOver(); }
+  else coopEndT = 0;
+}
+function coopOver() {
+  state = 'over';
+  played = true; store.set('played', true);
+  saveFarthest(); saveCoins(); saveDaily();
+  fillCoopOver(true);
+  show('ovCoopOver');
+}
+function fillCoopOver(fresh) {
+  if (!room) return;
+  const me = Math.floor(score), pp = room.partner && room.partner.run === room.run ? room.partner.score : 0;
+  const team = Math.max(me, pp);
+  if (fresh) {
+    const tb = store.get('coopBest', 0);
+    $('coNew').hidden = !(team > tb);
+    if (team > tb) store.set('coopBest', team);
+    const titles = ['We will get them next time', 'Down together, up together', 'One more run, my love?'];
+    $('coTitle').textContent = reachedToday ? 'You ran into your future together' : titles[Math.floor(Math.random() * titles.length)];
+  }
+  $('coMe').textContent = me;
+  $('coPartLbl').textContent = partnerName();
+  $('coPart').textContent = pp;
+  const chips = $('coChips'); chips.innerHTML = '';
+  chips.appendChild(chip(plural(revivesGiven, 'revive') + ' by you', revivesGiven ? 'hot' : ''));
+  chips.appendChild(chip('+' + run.coins + ' ♥ earned'));
+  chips.appendChild(chip('Team best: ' + store.get('coopBest', 0)));
+  $('coReach').textContent = 'Together you ran to ' + fmt(addDays(START, team)) + '.';
+  const here = partnerHere();
+  $('btnCoopAgain').hidden = !room.host;
+  $('btnCoopAgain').disabled = !here;
+  $('coWait').hidden = room.host && here;
+  $('coWait').textContent = !here
+    ? partnerName() + ' has left the room.'
+    : 'Waiting for ' + partnerName() + ' to start the next run…';
+}
+setInterval(() => { if (inCoop() && state === 'play') sendState(); }, 80);
+setInterval(() => {
+  if (!room) return;
+  sendHi();
+  if (current === 'ovRoom') renderRoom();
+  if (current === 'ovCoopOver') fillCoopOver(false);
+}, 1000);
+
+/* ---------------- Draw ---------------- */
+function pixelDisc(cx, cy, r) {
+  for (let y = -r; y <= r; y += 3) {
+    const hw = Math.floor(Math.sqrt(Math.max(0, r * r - y * y)) / 3) * 3;
+    ctx.fillRect(Math.round(cx - hw), Math.round(cy + y), hw * 2, 3);
+  }
+}
+function nameTag(text, x, y) {
+  ctx.font = '8px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  const w = ctx.measureText(text).width + 12;
+  ctx.fillStyle = 'rgba(255,250,247,0.92)';
+  ctx.fillRect(Math.round(x - w / 2), Math.round(y - 13), Math.round(w), 17);
+  ctx.fillStyle = '#c42e68';
+  ctx.fillText(text, x, y);
+}
+function miniHearts(cx, y, filled) {
+  for (let i = 0; i < 3; i++) ctx.drawImage(i < filled ? HEART : HEART_GRAY, Math.round(cx - 33 + i * 23), Math.round(y), 20, 18);
+}
+function runnerImg(role, pose, outfitId) {
+  if (role === 'her') return girlSet(outfitId)[pose] || girlSet(outfitId).stand;
+  return pose === 'a' || pose === 'jump' ? VIKI.walk : VIKI.stand;
+}
+function drawRunner(role, x, dy, pose, outfitId, alpha, faceLeft) {
+  const img = runnerImg(role, pose, outfitId);
+  const top = Math.round(GROUND - 75 - dy);
+  ctx.globalAlpha = alpha;
+  if (role === 'purest' && !faceLeft) { ctx.save(); ctx.translate(Math.round(x) + img.width, top); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0); ctx.restore(); }
+  else ctx.drawImage(img, Math.round(x), top);
+  ctx.globalAlpha = 1;
+  return top;
+}
+function pill(text, x, y, color) {
+  ctx.font = '9px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  const w = ctx.measureText(text).width + 20;
+  ctx.fillStyle = 'rgba(255,250,247,0.94)';
+  ctx.fillRect(Math.round(x - w / 2), Math.round(y - 15), Math.round(w), 22);
+  ctx.fillStyle = color || '#c42e68';
+  ctx.fillText(text, x, y);
+}
+let lastHeaderN = -1;
+function draw() {
+  const n = nightness(), pal = palette(n);
+  if (Math.abs(n - lastHeaderN) > 0.04) {
+    lastHeaderN = n;
+    header.style.color = n > 0.5 ? NIGHTP.hud : '';
+    hint.style.color = n > 0.5 ? NIGHTP.hud : '';
+  }
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - 0.5) * 7, (Math.random() - 0.5) * 7);
+
+  const g = ctx.createLinearGradient(0, 0, 0, GROUND);
+  g.addColorStop(0, pal.skyTop); g.addColorStop(1, pal.skyBot);
+  ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, GROUND + 12);
+
+  if (n > 0.03) {
+    for (const s of stars) {
+      const a = n * (0.55 + 0.45 * Math.sin(clock * 2 + s.ph));
+      ctx.fillStyle = 'rgba(255,240,250,' + a.toFixed(3) + ')';
+      if (s.big) { ctx.fillRect(s.x - 3, s.y, 9, 3); ctx.fillRect(s.x, s.y - 3, 3, 9); }
+      else ctx.fillRect(s.x, s.y, 3, 3);
+    }
+  }
+  const orbX = W * 0.74, orbY = Math.max(70, GROUND * 0.38);
+  if (n < 0.97) {
+    ctx.globalAlpha = (1 - n) * 0.3; ctx.fillStyle = '#ffb38a'; pixelDisc(orbX, orbY, 45);
+    ctx.globalAlpha = (1 - n) * 0.95; ctx.fillStyle = '#ffa37a'; pixelDisc(orbX, orbY, 30);
+    ctx.globalAlpha = 1;
+  }
+  if (n > 0.03) {
+    ctx.globalAlpha = n * 0.25; ctx.fillStyle = '#fff4d6'; pixelDisc(orbX, orbY, 36);
+    ctx.globalAlpha = n; pixelDisc(orbX, orbY, 24);
+    ctx.fillStyle = '#e8dcc0'; ctx.fillRect(orbX - 9, orbY - 6, 6, 6); ctx.fillRect(orbX + 6, orbY + 3, 9, 6); ctx.fillRect(orbX - 3, orbY + 12, 3, 3);
+    ctx.globalAlpha = 1;
+  }
+  ctx.globalAlpha = 0.85 - n * 0.62;
+  for (const c of bgClouds) ctx.drawImage(PUFF, Math.round(c.x), Math.round(c.y), PUFF.width * c.s, PUFF.height * c.s);
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = pal.hillFar;
+  const o1 = dist * 0.16;
+  for (let x = 0; x < W + 6; x += 6) {
+    const wx = x + o1, h = 50 + 28 * Math.sin(wx * 0.0052 + 1) + 14 * Math.sin(wx * 0.017);
+    const q = Math.round(h / 6) * 6; ctx.fillRect(x, GROUND - q, 6, q);
+  }
+  ctx.fillStyle = pal.hillNear;
+  const o2 = dist * 0.42;
+  for (let x = 0; x < W + 6; x += 6) {
+    const wx = x + o2, h = 24 + 16 * Math.sin(wx * 0.011 + 2) + 9 * Math.sin(wx * 0.031);
+    const q = Math.round(h / 6) * 6; ctx.fillRect(x, GROUND - q, 6, q);
+  }
+
+  ctx.fillStyle = pal.ground; ctx.fillRect(-10, GROUND, W + 20, H - GROUND + 12);
+  ctx.fillStyle = pal.line; ctx.fillRect(-10, GROUND, W + 20, 3);
+  const base0 = -(dist % TILE);
+  for (let base = base0; base < W; base += TILE) {
+    for (const b of groundBits) {
+      const x = Math.round(base + b.x);
+      if (x < -12 || x > W + 12) continue;
+      if (b.flower) {
+        ctx.fillStyle = '#5fbf8f'; ctx.fillRect(x, GROUND - 6, 3, 6);
+        ctx.fillStyle = b.c; ctx.fillRect(x - 3, GROUND - 12, 9, 3); ctx.fillRect(x, GROUND - 15, 3, 9);
+        ctx.fillStyle = '#fff6c9'; ctx.fillRect(x, GROUND - 12, 3, 3);
+      } else {
+        ctx.fillStyle = pal.line; ctx.globalAlpha = 0.5; ctx.fillRect(x, GROUND + b.y, b.w, 3); ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  for (const h of hearts) {
+    const x = h.wx - dist;
+    if (x > W + 30) continue;
+    const y = GROUND - h.yOff + bobOf(h.ph, 4, 4);
+    ctx.drawImage(h.gold ? GOLD : HEART, Math.round(x), Math.round(y));
+    if (Math.sin(gt * (h.gold ? 9 : 5) + h.ph) > 0.8) { ctx.fillStyle = '#fff'; ctx.fillRect(x + 24, y - 3, 3, 3); if (h.gold) ctx.fillRect(x - 3, y + 18, 3, 3); }
+  }
+  for (const p of pups) {
+    const x = p.wx - dist;
+    if (x > W + 30) continue;
+    const y = GROUND - p.yOff + bobOf(p.ph, 4, 4), img = PU[p.type];
+    ctx.globalAlpha = 0.25 + 0.15 * Math.sin(clock * 6 + p.ph);
+    ctx.fillStyle = '#ffffff'; pixelDisc(x + img.width / 2, y + img.height / 2, 24);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(img, Math.round(x), Math.round(y));
+  }
+  for (const o of obstacles) {
+    const x = sxOf(o);
+    if (x > W + 30) continue;
+    const top = GROUND - o.yOff + (o.kind === 'cloud' ? bobOf(o.ph, 3, 3) : 0);
+    for (const p of o.parts) ctx.drawImage(p.img, Math.round(x + p.ox), Math.round(top + p.oy));
+    if (o.kind === 'cloud') {
+      ctx.fillStyle = '#7fb6ff';
+      for (let i = 0; i < 4; i++) {
+        const ry = (clock * 70 + i * 11) % 16;
+        ctx.globalAlpha = 1 - ry / 16;
+        ctx.fillRect(Math.round(x + 12 + i * 14), Math.round(top + o.h - 6 + ry), 3, 6);
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  const coop = inCoop();
+  const partner = coop && room.partner && room.partner.run === room.run ? room.partner : null;
+  const shadowAt = (x, dy) => { const w = Math.max(16, 40 - dy * 0.15); ctx.fillRect(Math.round(x + 30 - w / 2), GROUND + 3, Math.round(w), 3); };
+  ctx.fillStyle = 'rgba(80,20,60,0.16)';
+  shadowAt(dino.x, dino.dy);
+  if (viki.mode !== 'off') shadowAt(viki.x, viki.dy);
+  if (partner && partner.alive) shadowAt(slotFor(partner.role), partner.dyShown);
+  if (n > 0.35) { ctx.shadowColor = 'rgba(255,214,236,0.85)'; ctx.shadowBlur = 9 * n * S * DPR; }
+
+  let vtop = 0;
+  if (viki.mode !== 'off') {
+    const moving = viki.mode === 'enter' || (viki.mode === 'run' && (state === 'play' || viki.dy > 0));
+    const pose = moving && (viki.dy > 0 || (viki.mode === 'enter' ? Math.floor(viki.anim) % 2 : Math.floor(dist / 28) % 2)) ? 'a' : 'stand';
+    vtop = drawRunner('purest', viki.x, viki.dy, pose, null, 1, viki.mode !== 'run');
+  }
+  let ptop = 0;
+  if (partner) {
+    const ghost = !partner.alive, gone = !partnerHere();
+    const pose = ghost ? 'stand' : partner.dyShown > 2 ? 'jump' : state === 'play' && gt > 0 ? (Math.floor(dist / 28) % 2 ? 'a' : 'b') : 'stand';
+    const alpha = gone ? 0.25 : ghost ? 0.4 : (partner.inv && Math.floor(clock * 10) % 2 === 0 ? 0.35 : 1);
+    ptop = drawRunner(partner.role, slotFor(partner.role), partner.dyShown + (ghost ? 12 + Math.sin(clock * 3 + 1) * 5 : 0), pose, partner.outfit, alpha, false);
+  }
+  const myRoleNow = coop ? room.role : 'her';
+  let myPose = 'stand';
+  if (state === 'dying' || (state === 'over' && !coop)) myPose = 'hurt';
+  else if (!dino.ground) myPose = 'jump';
+  else if (state === 'play' && meAlive && !(coop && gt <= 0)) myPose = Math.floor(dist / 28) % 2 ? 'a' : 'b';
+  const ghostMe = coop && !meAlive;
+  let myAlpha = 1;
+  if (ghostMe) myAlpha = 0.4;
+  else if (inv > 0 && state === 'play' && Math.floor(inv * 10) % 2 === 0) myAlpha = 0.35;
+  const mytop = drawRunner(myRoleNow, dino.x, dino.dy + (ghostMe ? 12 + Math.sin(clock * 3) * 5 : 0), myPose, outfit, myAlpha, false);
+  ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+
+  if (shieldOn && meAlive && (state === 'play' || state === 'paused')) {
+    ctx.strokeStyle = 'rgba(111,202,245,' + (0.55 + 0.25 * Math.sin(clock * 6)).toFixed(2) + ')';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(dino.x + 33, dinoTop() + 40, 46 + Math.sin(clock * 4) * 2, 0, Math.PI * 2); ctx.stroke();
+  }
+  if (magnetT > 0 && state === 'play' && Math.sin(clock * 20) > 0) {
+    ctx.fillStyle = 'rgba(255,92,147,0.7)';
+    ctx.fillRect(dino.x + 62 + Math.random() * 30, dinoTop() + 10 + Math.random() * 50, 3, 3);
+  }
+  if (viki.mode === 'meet' || viki.mode === 'enter' || (viki.mode === 'run' && tagT > 0)) nameTag('Purest', viki.x + 30, vtop - 6);
+  if (viki.mode === 'meet') {
+    const a = Math.min(1, meetT * 3), s = 1.4 + Math.min(1, meetT * 2) * 0.8;
+    const cx = (dino.x + viki.x) / 2 + 30, cy = GROUND - 75 - 40 + Math.sin(clock * 3) * 4;
+    ctx.globalAlpha = a;
+    ctx.drawImage(HEART, Math.round(cx - HEART.width * s / 2), Math.round(cy - HEART.height * s / 2), Math.round(HEART.width * s), Math.round(HEART.height * s));
+    ctx.globalAlpha = 1;
+  }
+  if (partner) {
+    const px = slotFor(partner.role) + 30;
+    nameTag(TAGS[partner.role] + (partnerHere() ? '' : ' (offline)'), px, ptop - 6);
+    if (!partner.alive) miniHearts(px, ptop - 44, rv);
+  }
+  if (ghostMe && partner) miniHearts(dino.x + 30, mytop - 26, partner.rv);
+
+  for (const p of parts) {
+    const a = Math.max(0, 1 - p.age / p.life);
+    ctx.globalAlpha = a;
+    if (p.k === 'h' || p.k === 'g') ctx.drawImage(p.k === 'g' ? GOLD : HEART, p.x, p.y, HEART.width * p.s, HEART.height * p.s);
+    else if (p.k === 'p') { ctx.fillStyle = n > 0.5 ? '#d9c8ef' : '#ffffff'; ctx.fillRect(p.x, p.y, p.s, p.s); }
+    else { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); }
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'center';
+  ctx.font = '10px "Press Start 2P", monospace';
+  for (const f of floats) {
+    ctx.globalAlpha = 1 - f.age / f.life;
+    ctx.fillStyle = f.color || (n > 0.5 ? '#ffdcee' : '#c42e68');
+    if (n > 0.5 && f.color) ctx.fillStyle = '#fff2b8';
+    ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+
+  drawHud(pal);
+  drawJourney(pal);
+
+  if (coop && state === 'play') {
+    const by = HUD + 100;
+    if (gt <= 0) {
+      const c = Math.ceil(-gt);
+      ctx.font = '40px "Press Start 2P", monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,250,247,0.95)';
+      ctx.fillText(c > 0 ? String(c) : 'GO!', W / 2 + 3, GROUND - 150 + 3);
+      ctx.fillStyle = '#c42e68';
+      ctx.fillText(c > 0 ? String(c) : 'GO!', W / 2, GROUND - 150);
+      pill('Get ready to run together', W / 2, GROUND - 110);
+    } else if (gt < 0.6) {
+      ctx.font = '40px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#c42e68';
+      ctx.fillText('GO!', W / 2, GROUND - 150);
+    }
+    if (gt > 0 && !meAlive && partner && partner.alive) pill('You\'re down · ' + partnerName() + ' needs ' + (3 - partner.rv) + ' more ♥', W / 2, by, '#7a3cc4');
+    else if (gt > 0 && meAlive && partner && !partner.alive && partnerHere()) pill(partnerName() + ' is down · catch ' + (3 - rv) + ' more ♥', W / 2, by);
+  }
+
+  if (flash > 0) { ctx.fillStyle = 'rgba(255,70,120,' + (flash * 0.6).toFixed(3) + ')'; ctx.fillRect(-10, -10, W + 20, H + 20); }
+  ctx.restore();
+}
+const pad = v => String(Math.max(0, Math.floor(v))).padStart(5, '0');
+function drawHud(pal) {
+  for (let i = 0; i < 3; i++) ctx.drawImage(i < lives && meAlive ? HEART : HEART_GRAY, 14 + i * 30, HUD);
+  ctx.fillStyle = pal.hud;
+  ctx.textAlign = 'left';
+  ctx.font = '11px "Press Start 2P", monospace';
+  ctx.fillText(fmt(addDays(START, Math.floor(score))), 16, HUD + 46);
+  let px = 16;
+  const py = HUD + 58;
+  const icon = (pimg, frac) => {
+    const w = 24, h = Math.round(24 * pimg.height / pimg.width);
+    ctx.drawImage(pimg, px, py, w, h);
+    if (frac !== null) {
+      ctx.fillStyle = 'rgba(80,20,60,0.2)'; ctx.fillRect(px, py + 28, w, 3);
+      ctx.fillStyle = '#ff5c93'; ctx.fillRect(px, py + 28, Math.round(w * Math.max(0, frac)), 3);
+    }
+    px += 32;
+  };
+  if (state === 'play' || state === 'paused') {
+    if (shieldOn) icon(PU.shield, null);
+    if (magnetT > 0) icon(PU.magnet, magnetT / 8);
+    if (doubleT > 0) icon(PU.double, doubleT / 8);
+  }
+  ctx.fillStyle = pal.hud;
+  ctx.textAlign = 'right';
+  ctx.font = '16px "Press Start 2P", monospace';
+  const sTxt = pad(score);
+  ctx.fillText(sTxt, W - 16, HUD + 21);
+  const sw = ctx.measureText(sTxt).width;
+  ctx.globalAlpha = 0.6;
+  ctx.fillText('HI ' + pad(Math.max(best, state === 'start' ? 0 : Math.floor(score))), W - 30 - sw, HUD + 21);
+  ctx.globalAlpha = 1;
+  if (state === 'play' && mult > 1) {
+    ctx.font = '11px "Press Start 2P", monospace';
+    ctx.fillStyle = '#ff3d7f';
+    ctx.fillText('x' + mult + ' COMBO', W - 16, HUD + 44);
+  }
+  if (inCoop() && room.partner && room.partner.run === room.run) {
+    const p = room.partner;
+    ctx.textAlign = 'center';
+    ctx.font = '9px "Press Start 2P", monospace';
+    ctx.fillStyle = pal.hud;
+    ctx.fillText(TAGS[p.role] + ' ' + (!partnerHere() ? 'offline' : p.alive ? pad(p.score) : 'down'), W / 2, HUD + 44);
+    for (let i = 0; i < 3; i++) ctx.drawImage(i < p.lives && p.alive ? HEART : HEART_GRAY, Math.round(W / 2 - 25 + i * 17), HUD + 52, 15, 13);
+  }
+}
+function drawJourney(pal) {
+  const y = GROUND + 22, x0 = 22, x1 = W - 22, len = x1 - x0;
+  const p = Math.min(1, score / TOTAL_DAYS);
+  ctx.globalAlpha = 0.3; ctx.fillStyle = pal.line; ctx.fillRect(x0, y, len, 6); ctx.globalAlpha = 1;
+  if (farthest > 0 && state !== 'play') {
+    const fp = Math.min(1, farthest / TOTAL_DAYS);
+    ctx.globalAlpha = 0.35; ctx.fillStyle = '#ff5c93'; ctx.fillRect(x0, y, len * fp, 6); ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = '#ff5c93'; ctx.fillRect(x0, y, Math.round(len * p), 6);
+  ctx.fillStyle = pal.line;
+  for (let m = 1; m <= MONTHS; m++) {
+    const tx = Math.round(x0 + len * monthDay(m) / TOTAL_DAYS);
+    ctx.globalAlpha = monthDay(m) <= score ? 0.9 : 0.4; ctx.fillRect(tx - 1, y - 3, 3, 12);
+  }
+  ctx.globalAlpha = 1;
+  ctx.drawImage(HEART, Math.round(x0 + len * p - 10), y - 7, 20, 18);
+  ctx.fillStyle = pal.hud;
+  ctx.font = '9px "Press Start 2P", monospace';
+  ctx.textAlign = 'left'; ctx.fillText(fmt(START), x0, y + 26);
+  ctx.textAlign = 'right'; ctx.fillText(reachedToday ? 'Today ✓ and beyond' : 'Today', x1, y + 26);
+}
+
+/* ---------------- Loop ---------------- */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+  last = now;
+  tick(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+
+window.__rty = {
+  get state() { return state; }, get score() { return score; }, set score(v) { score = v; }, set lives(v) { lives = v; },
+  TOTAL_DAYS, MONTHS,
+  info() { return { state, meAlive, lives, rv, gt: Math.round(gt * 10) / 10, dist: Math.round(dist), role: room && room.role, code: room && room.code, host: room && room.host, synced: room && room.synced, offset: room && Math.round(room.offset), partner: room && room.partner && { role: room.partner.role, alive: room.partner.alive, rv: room.partner.rv, run: room.partner.run === room.run, here: partnerHere() }, obstacles: obstacles.slice(0, 3).map(o => Math.round(o.wx)) }; },
+  fakeHeart() { collectHeart({ wx: dist + dino.x, yOff: 30, ph: 0, gone: false, gold: false }); },
+  down() { lives = 0; goDown(false); },
+  give(c) { coins += c; saveCoins(); }
+};
+
+paintSound();
+fillStart();
+resize();
+reset();
+requestAnimationFrame(t => { last = t; frame(t); });
+if (document.fonts && document.fonts.load) {
+  document.fonts.load('700 20px "Pixelify Sans"').catch(() => {});
+  document.fonts.load('16px "Press Start 2P"').catch(() => {});
+}
+window.addEventListener('pointerdown', () => { if (!muted) audio(); }, { passive: true });
+(() => {
+  const h = (location.hash || '').slice(1).toUpperCase();
+  if (/^[A-Z2-9]{4}[0-9]$/.test(h)) { $('joinCode').value = h; openRoom(h, false, null, +h[4]); }
+})();
+})();
+</script>
+</body>
+</html>
