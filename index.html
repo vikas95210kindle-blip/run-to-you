@@ -41,16 +41,17 @@ input{-webkit-user-select:text;user-select:text}
 #hint{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 18px);margin:0;padding:0 16px;text-align:center;font-weight:700;font-size:14px;color:var(--ink);opacity:.75;pointer-events:none;z-index:2}
 
 #toast{
-  position:fixed;left:50%;z-index:3;width:min(380px, calc(100vw - 32px));
-  transform:translate(-50%,-8px);opacity:0;transition:opacity .35s, transform .35s;
+  position:fixed;z-index:3;left:calc(14px + env(safe-area-inset-left));right:calc(112px + env(safe-area-inset-right));bottom:calc(env(safe-area-inset-bottom) + 12px);
+  max-width:420px;margin:0 auto;transform:translateY(8px);opacity:0;transition:opacity .35s, transform .35s;
   background:rgba(255,250,247,.95);border-radius:16px;padding:10px 14px;text-align:center;pointer-events:none;
   box-shadow:0 0 0 2px #ffc2d8, 0 8px 22px rgba(120,30,80,.18);
 }
-#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.show{opacity:1;transform:none}
 #toast strong{display:block;font-family:var(--font-body);font-weight:800;color:var(--rose-deep);font-size:15px}
 #toast span{display:block;font-size:14.5px;line-height:1.35;margin-top:3px;color:var(--ink);font-weight:700}
 
-#controls{position:fixed;right:calc(12px + env(safe-area-inset-right));display:none;gap:8px;z-index:4}
+#controls{position:fixed;right:calc(12px + env(safe-area-inset-right));bottom:calc(env(safe-area-inset-bottom) + 12px);display:none;gap:8px;z-index:4}
+body.playing #header,body.playing #hint{display:none}
 #controls.show{display:flex}
 .icon{
   width:40px;height:40px;border-radius:12px;padding:0;cursor:pointer;display:grid;place-items:center;
@@ -180,8 +181,25 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
 .joinrow input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .joinrow .btn{flex:0 0 auto}
 .status{margin:0;font-weight:800;font-size:15px;line-height:1.4;color:var(--ink)}
+.cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cpick{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:14px;border:2px solid #ffe0ec;background:#fff;cursor:pointer;font-family:var(--font-body);font-weight:800;font-size:13px;color:var(--ink)}
+.cpick canvas{width:46px;height:60px;image-rendering:pixelated}
+.cpick[aria-pressed="true"]{border-color:var(--rose);background:#fff1f6;box-shadow:0 0 0 2px var(--rose) inset}
+.joinrow input.name{font-family:var(--font-body);font-weight:800;font-size:17px;letter-spacing:0;text-transform:none}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;text-align:left}
+.plist li{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;background:#fff;border:2px solid #ffe0ec;border-radius:12px;padding:6px 10px;font-weight:800;font-size:15px}
+.plist li canvas{width:26px;height:34px;image-rendering:pixelated}
+.plist .tag{font-size:12px;color:var(--muted);font-weight:800}
+.plist .sc{font-family:var(--font-digits);font-size:13px;color:var(--rose-deep)}
+.plist li.me{border-color:var(--rose)}
+.plist li.lead{background:#fff4d6;border-color:#ffc83d}
 .status.err{color:#b3261e}
 
+@media (max-height:520px){
+  #toast{padding:6px 12px;left:calc(110px + env(safe-area-inset-left));max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #toast strong,#toast span{display:inline;font-size:13px}
+  #toast span{margin:0 0 0 8px}
+}
 @media (prefers-reduced-motion: reduce){
   #toast{transition:none}
   .btn{transition:none}
@@ -215,7 +233,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
     <div class="chips" id="startChips"></div>
     <ul class="how" id="howList">
       <li><span class="ic">↑</span><span>Tap to jump. Hold to jump higher.</span></li>
-      <li><span class="ic">✿</span><span>Hop over cacti and gaps, land on platforms, and stomp the grumpy puffs.</span></li>
+      <li><span class="ic">✿</span><span>Hop over cacti and gaps, jump onto ladders to climb, bounce on springs, and stomp grumpy puffs.</span></li>
       <li><span class="ic">♥</span><span>Catch hearts in a row for combos. Love makes time fly.</span></li>
       <li><span class="ic">✉</span><span id="howLetter">Run all the way to today. Someone is waiting for you there, with a letter.</span></li>
     </ul>
@@ -234,14 +252,12 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
 <section id="ovCoop" class="overlay" aria-label="Play together">
   <div class="card">
     <div class="memhead"><h2>Play together</h2><button id="btnCoopBack" class="btn ghost small" type="button">Back</button></div>
-    <p class="muted">Run side by side on two phones. If one of you goes down, the other catches 3 hearts to bring them back. The run only ends when you are both down.</p>
-    <p class="mhead"><span>Who is playing on this phone?</span></p>
-    <div class="seg" role="group" aria-label="Who is playing on this phone">
-      <button id="roleHer" class="btn ghost" type="button" aria-pressed="true">Her</button>
-      <button id="rolePurest" class="btn ghost" type="button" aria-pressed="false">Purest</button>
-    </div>
+    <p class="muted">Run together on up to 5 phones. Climb, bounce and race for the crown. If someone goes down, catch 3 hearts or reach the next level gate to bring them back. The run ends only when everyone is down.</p>
+    <p class="mhead"><span>Pick your runner</span></p>
+    <div id="charGrid" class="cgrid" role="group" aria-label="Pick your runner"></div>
+    <div class="joinrow"><input id="nameInput" class="name" maxlength="12" autocomplete="off" spellcheck="false" placeholder="Your name" aria-label="Your name"></div>
     <button id="btnCreate" class="btn primary wide" type="button">Create a room</button>
-    <p class="mhead"><span>Got a code from your love?</span></p>
+    <p class="mhead"><span>Got a room code?</span></p>
     <div class="joinrow">
       <input id="joinCode" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CODE" aria-label="Room code">
       <button id="btnJoin" class="btn primary small" type="button">Join</button>
@@ -256,6 +272,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
     <div class="codebox" id="roomCode">· · · ·</div>
     <p id="roomStatus" class="status">Connecting…</p>
     <div class="chips" id="roomChips"></div>
+    <ul id="roomList" class="plist"></ul>
     <div id="hostCtrls" class="stack">
       <a id="btnInvite" class="btn ghost wide" href="#" target="_blank" rel="noopener">Send invite on WhatsApp</a>
       <button id="btnStartCoop" class="btn primary wide" type="button" disabled>Start together</button>
@@ -268,10 +285,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
   <div class="card">
     <p class="eyebrow" id="coEyebrow">Team run over</p>
     <h2 class="title sm" id="coTitle"></h2>
-    <div class="scores">
-      <div><span class="lbl" id="coMeLbl">You</span><span id="coMe" class="num">0</span></div>
-      <div><span class="lbl" id="coPartLbl">Purest</span><span id="coPart" class="num">0</span></div>
-    </div>
+    <ol id="coRank" class="plist"></ol>
     <p id="coNew" class="badge" hidden>New team best!</p>
     <div class="chips" id="coChips"></div>
     <p id="coReach" class="best"></p>
@@ -339,10 +353,11 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
         <li>Catch hearts in a row for a combo, up to x5. Missing one resets it.</li>
         <li>Golden hearts are rare: 50 days and 10 ♥ each.</li>
         <li>Power-ups: Purest's hug saves you from one hit, the love magnet pulls hearts in, and double days doubles every point.</li>
+        <li>Jump onto a ladder to climb to the rooftops. Springs launch you to the sky road. Lifts carry you up and down. Fall off the high road and you simply land on the low road.</li>
         <li>Land on floating platforms, leap over gaps, and jump on grumpy puffs to stomp them.</li>
         <li>Every level gate is a checkpoint: you get a life back, and a downed partner comes back to life.</li>
         <li>Clear a cactus by a whisker for a close-call bonus.</li>
-        <li>Play together on two phones. Jump at the same moment for an in-sync bonus. If one of you goes down, the other catches 3 hearts to bring them back. Whoever leads wears the crown.</li>
+        <li>Play together on up to 5 phones. Jump at the same moment as someone for an in-sync bonus. If someone goes down, catch 3 hearts to bring them back. Whoever leads wears the crown.</li>
         <li>Spend ♥ in the wardrobe on new outfits.</li>
       </ul>
     </div>
@@ -762,10 +777,10 @@ const TILE = 960;
 
 function resize() {
   const vw = window.innerWidth, vh = window.innerHeight;
-  S = Math.min(vw / 540, vh / 380);
+  S = Math.min(vw / 600, vh / 400);
   W = vw / S; H = vh / S;
-  GROUND = H <= 520 ? Math.round(H - 58) : Math.round(H * 0.62);
-  HUD = Math.max(14, GROUND - 330);
+  HUD = 14;
+  GROUND = H <= 540 ? Math.round(H - 58) : Math.round(Math.min(H - 150, HUD + 860));
   DPR = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(vw * DPR); cv.height = Math.round(vh * DPR);
   cv.style.width = vw + 'px'; cv.style.height = vh + 'px';
@@ -775,12 +790,8 @@ function resize() {
   layoutHtml();
 }
 function layoutHtml() {
-  const hudCss = HUD * S;
-  const roomy = hudCss >= 150;
-  header.style.display = roomy ? '' : 'none';
-  toastEl.style.top = (roomy ? Math.max(hudCss - 86, 118) : (HUD + 50) * S) + 'px';
-  controls.style.top = ((HUD + 58) * S) + 'px';
-  hint.style.display = (H - GROUND) * S > 130 ? '' : 'none';
+  header.style.display = H > 700 ? '' : 'none';
+  hint.style.display = 'none';
 }
 function buildScenery() {
   stars = [];
@@ -864,6 +875,8 @@ const sfx = {
   over() { [392, 330, 262].forEach((f, i) => tone(f, 0.22, 'triangle', 0.06, i * 0.16)); },
   level() { [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, 0.14, 'square', 0.04, i * 0.08)); },
   stomp() { tone(220, 0.12, 'square', 0.06, 0, 520); },
+  spring() { tone(260, 0.3, 'square', 0.05, 0, 1300); },
+  climb() { [392, 494, 587, 698].forEach((f, i) => tone(f, 0.06, 'square', 0.03, i * 0.05)); },
   sync() { tone(784, 0.1, 'triangle', 0.07); tone(988, 0.1, 'triangle', 0.07, 0.06); tone(1175, 0.16, 'triangle', 0.07, 0.12); }
 };
 function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
@@ -871,8 +884,8 @@ const SOUND_ON = '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true
 const SOUND_OFF = '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 7h3l5-4v14l-5-4H3z"/><path d="M14 7l4 6M18 7l-4 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 function paintSound() { $('btnSound').innerHTML = muted ? SOUND_OFF : SOUND_ON; $('btnSound').setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off'); }
 
-/* ---------------- World motion (a pure function of time, so two phones agree) ---------------- */
-const SPEED0 = 340, ACC = 4.5, SPEED_MAX = 720, GRAV = 2600, JUMP_V = 900, CUT_V = 520, PTS_DIV = 42, STOMP_V = 640;
+/* ---------------- World motion (a pure function of time, so every phone agrees) ---------------- */
+const SPEED0 = 340, ACC = 4.5, SPEED_MAX = 700, GRAV = 2600, JUMP_V = 900, CUT_V = 520, PTS_DIV = 42, STOMP_V = 640, SPRING_V = 1500;
 const T_MAX = (SPEED_MAX - SPEED0) / ACC;
 const D_MAX = SPEED0 * T_MAX + 0.5 * ACC * T_MAX * T_MAX;
 const distAt = t => t <= 0 ? 0 : t <= T_MAX ? SPEED0 * t + 0.5 * ACC * t * t : D_MAX + SPEED_MAX * (t - T_MAX);
@@ -880,6 +893,7 @@ const speedAtTime = t => Math.min(SPEED_MAX, SPEED0 + ACC * Math.max(0, t));
 const speedAtDist = x => x >= D_MAX ? SPEED_MAX : Math.sqrt(SPEED0 * SPEED0 + 2 * ACC * Math.max(0, x));
 const LV_STARTS = [0, 6500, 15000, 26000, 39000];
 const LEVEL_NAMES = ['Meadow of Firsts', 'Monsoon Rooftops', 'Lantern Lanes', 'Winter Hills', 'Starlight Sky'];
+const LEVEL_HINTS = ['Jump onto ladders to climb up high.', 'Climb to the rooftops. Mind the gaps between roofs.', 'Bounce on springs to reach the lantern road.', 'Ride the lifts across the icy gaps.', 'Springs, ladders and lifts. Reach the stars together.'];
 function levelIndexAt(x) {
   if (x >= 39000) return 4 + Math.floor((x - 39000) / 15000);
   let i = 0;
@@ -888,44 +902,81 @@ function levelIndexAt(x) {
 }
 const levelName = l => LEVEL_NAMES[l % 5];
 
+/* ---------------- Runners: Sunshine, Purest and four friends ---------------- */
+const FRIEND_SHORT = [
+  '......HHHHHH......', '....HHHHHHHHHH....', '...HHHHHHHHHHHH...', '..HHHHHHHHHHHHHH..', '..HHHHHHHHHHHHSH..',
+  '..HHHHHHHHSSSSSSS.', '..HHHHHHHSSSSSESS.', '..HHHHHHHSSSSSSSSS', '..HHHHHHSSSSKKSSS.', '...HHHHHSSSSSSMMS.', '....HHHHSSSSSSSS..', '.........SSSS.....',
+  '........PPPPPP....', '.......PPPPPPPP...', '.......PPPPPPPP...', '.......PPPPPPPP...', '.......PPPPPPPP...', '.......PPPPPPPP...', '.......JJJJJJJJ...'
+];
+const FRIEND_BOB = [
+  '......HHHHHH......', '....HHHHHHHHHH....', '...HHHHHHHHHHHH...', '..HHHHHHHHHHHHHH..', '..HHHHHHHHHHHSSH..',
+  '.HHHHHHHHHSSSSSSS.', '.HHHHHHHHHSSSSESS.', '.HHHHHHHHSSSSSSSSS', 'HHHHHHHHHSSSKKSSS.', 'HHHHHHHHHSSSSSMMS.', 'HHHHHHHHHHSSSSSS..', 'HHHHHHHHH.SSSS....',
+  '.HHHHHHHPPPPPP....', '..HHHHHPPPPPPPP...', '.......PPPPPPPP...', '.......PPPPPPPP...', '.......PPPPPPPP...', '.......PPPPPPPP...', '.......JJJJJJJJ...'
+];
+function friendFrame(rows, legs, arm, pal) {
+  const r = rows.concat(legs).map(s => s.split(''));
+  const set = (x, y, c) => { r[y][x] = c; };
+  if (arm === 'fwd') { set(15, 14, 'P'); set(15, 15, 'S'); set(16, 15, 'S'); set(16, 16, 'S'); }
+  if (arm === 'back') { set(6, 14, 'P'); set(5, 15, 'S'); set(6, 15, 'S'); set(4, 16, 'S'); set(5, 16, 'S'); }
+  if (arm === 'up') { set(15, 13, 'P'); set(15, 12, 'S'); set(16, 12, 'S'); set(16, 11, 'S'); }
+  if (arm === 'side') { set(15, 14, 'P'); set(15, 15, 'S'); set(15, 16, 'S'); }
+  return sprite(r.map(s => s.join('')), Object.assign({ E: '#2a1b1d', K: '#f2898f', M: '#c4405c', W: '#f5f1f3' }, pal), '#3a2236');
+}
+function friendSet(rows, pal) {
+  return { stand: friendFrame(rows, GIRL_LEGS.stand, 'side', pal), a: friendFrame(rows, GIRL_LEGS.a, 'back', pal), b: friendFrame(rows, GIRL_LEGS.b, 'fwd', pal), jump: friendFrame(rows, GIRL_LEGS.jump, 'up', pal) };
+}
+const CHARS = {
+  sunshine: { label: 'Sunshine' },
+  purest: { label: 'Purest' },
+  mint: { label: 'Mint', set: friendSet(FRIEND_SHORT, { H: '#3b2a20', S: '#f0c19c', P: '#36b585', J: '#2c3e66' }) },
+  sky: { label: 'Sky', set: friendSet(FRIEND_SHORT, { H: '#1f1a1a', S: '#c98b62', P: '#4aa3ff', J: '#3a3a46' }) },
+  mango: { label: 'Mango', set: friendSet(FRIEND_BOB, { H: '#5a3214', S: '#f2c7a0', P: '#ffb627', J: '#7a3e8f' }) },
+  coral: { label: 'Coral', set: friendSet(FRIEND_BOB, { H: '#2a1b1d', S: '#d9a07a', P: '#ff7a59', J: '#2f4f4f' }) }
+};
+const CHAR_IDS = Object.keys(CHARS);
+const validChar = c => CHARS[c] ? c : 'sunshine';
+function runnerImg(char, pose, outfitId) {
+  if (char === 'sunshine') { const s = girlSet(outfitId || 'berry'); return s[pose] || s.stand; }
+  if (char === 'purest') return pose === 'a' || pose === 'jump' ? VIKI.walk : VIKI.stand;
+  const s = CHARS[validChar(char)].set;
+  return s[pose === 'hurt' ? 'stand' : pose] || s.stand;
+}
+const SLOTS = [116, 64, 168, 12, 220];
+
 /* ---------------- Game state ---------------- */
-let state = 'start', score = 0, speed = SPEED0, lives = 3, inv = 0, timer = 0, gt = 0, dist = 0;
-let obstacles = [], hearts = [], pups = [], plats = [], pits = [], foes = [], gates = [], parts = [], floats = [];
-let genX = 0, crng = Math.random, lastGateLvl = 0, foeSeq = 0, curLevel = 0;
+let state = 'start', score = 0, speed = SPEED0, lives = 3, inv = 0, timer = 0, gt = 0, dist = 0, camY = 0;
+let obstacles = [], hearts = [], pups = [], plats = [], pits = [], foes = [], gates = [], ladders = [], springs = [], signs = [], parts = [], floats = [];
+let genX = 0, crng = Math.random, lastGateLvl = 0, foeSeq = 0, curLevel = 0, forceSeg = null;
 let shake = 0, flash = 0, lastMonth = 0, reachedToday = false, lastHit = 'cactus', idleT = 0, clock = 0;
 let shieldOn = false, magnetT = 0, doubleT = 0, combo = 0, mult = 1, run = null, bestAnnounced = false, tagT = 0, rankStart = 0;
-let meAlive = true, rv = 0, reviveSerial = 0, handledRevive = 0, revivesGiven = 0, reviveWaitUntil = 0, coopEndT = 0, lastCount = 99;
-let myLastJumpGt = -99, lastSyncGt = -99, syncJumps = 0;
-const dino = { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0 };   // the runner on this phone
-const viki = { mode: 'off', x: 0, dy: 0, anim: 0, sp: 300 };                          // Purest as the solo-mode companion
+let meAlive = true, rv = 0, rvTarget = '', reviveSerial = 0, reviveTo = '', revivesGiven = 0, reviveWaitUntil = 0, coopEndT = 0, lastCount = 99;
+let myLastJumpGt = -99, lastSyncGt = -99, syncJumps = 0, climbs = 0;
+const dino = { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0, climb: null };   // the runner on this phone
+const viki = { mode: 'off', x: 0, dy: 0, anim: 0, sp: 300 };                                      // Purest as the solo-mode companion
 let hist = [], meetT = 0;
-let room = null;                                                                        // the co-op room, when playing together
+let room = null;                                                                                    // the co-op room, when playing together
 const DBOX = [{ x: 20, y: 8, w: 34, h: 28 }, { x: 24, y: 40, w: 24, h: 20 }, { x: 20, y: 60, w: 26, h: 12 }];
 const multFor = c => c <= 0 ? 1 : Math.min(5, 1 + Math.floor((c - 1) / 3));
-const NAMES = { her: 'Her', purest: 'Purest' };
-const TAGS = { her: 'My love', purest: 'Purest' };
 const inCoop = () => !!(room && room.run);
-const slotFor = role => role === 'purest' ? 30 : 92;
-const partnerName = () => room && room.role ? TAGS[room.role === 'her' ? 'purest' : 'her'] : 'your love';
-const pron = () => room && room.role === 'purest' ? 'her' : 'him';
 
 const FOE_ROWS = [
   ['...KKKKKK...', '.KKKKKKKKKK.', 'KKEKKKKKKEKK', 'KKKEKKKKEKKK', 'KKKWKKKKWKKK', 'KKKKMMMMKKKK', '.KKKKKKKKKK.', '..FF....FF..'],
   ['...KKKKKK...', '.KKKKKKKKKK.', 'KKEKKKKKKEKK', 'KKKEKKKKEKKK', 'KKKWKKKKWKKK', 'KKKKMMMMKKKK', '.KKKKKKKKKK.', '...FF..FF...']
 ];
-const FOE_PAL = { K: '#8f7cab', E: '#2a1b2e', M: '#2a1b2e', W: '#ffffff', F: '#5a4a70' };
-const FOE = FOE_ROWS.map(r => sprite(r, FOE_PAL, '#3d2f52'));
+const FOE = FOE_ROWS.map(r => sprite(r, { K: '#8f7cab', E: '#2a1b2e', M: '#2a1b2e', W: '#ffffff', F: '#5a4a70' }, '#3d2f52'));
 const CROWN = sprite(['Y.Y.Y', 'YRYRY', 'YYYYY'], { Y: '#ffc83d', R: '#ff4d7d' }, '#a8740b');
+const SPRING = [sprite(['RRRRRRRRRRRR', '.SSSSSSSSSS.', '..S......S..', '.SSSSSSSSSS.', '..S......S..', 'GGGGGGGGGGGG'], { R: '#ff4d7d', S: '#c9ced9', G: '#6b5a7e' }, '#3d2f52'),
+                sprite(['RRRRRRRRRRRR', '.SSSSSSSSSS.', 'GGGGGGGGGGGG'], { R: '#ff4d7d', S: '#c9ced9', G: '#6b5a7e' }, '#3d2f52')];
 
 function reset() {
-  score = 0; gt = 0; dist = 0; speed = SPEED0; lives = 3; inv = 0; floats = [];
-  lastMonth = 0; reachedToday = false; meAlive = true; rv = 0; reviveSerial = 0; handledRevive = 0; revivesGiven = 0; reviveWaitUntil = 0; coopEndT = 0; lastCount = 99;
-  myLastJumpGt = -99; lastSyncGt = -99; syncJumps = 0; curLevel = 0;
+  score = 0; gt = 0; dist = 0; camY = 0; speed = SPEED0; lives = 3; inv = 0; floats = [];
+  lastMonth = 0; reachedToday = false; meAlive = true; rv = 0; rvTarget = ''; reviveSerial = 0; reviveTo = ''; revivesGiven = 0; reviveWaitUntil = 0; coopEndT = 0; lastCount = 99;
+  myLastJumpGt = -99; lastSyncGt = -99; syncJumps = 0; climbs = 0; curLevel = 0;
   themeFrom = THEMEC[0]; themeTo = 0; themeK = 1;
   shieldOn = false; magnetT = 0; doubleT = 0; combo = 0; mult = 1; tagT = 0;
   run = { hearts: 0, cacti: 0, clouds: 0, near: 0, maxMult: 1, coins: 0, golden: 0, power: 0, stomps: 0 };
   bestAnnounced = best === 0; rankStart = rankOf(best);
-  Object.assign(dino, { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0 });
+  Object.assign(dino, { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0, climb: null });
   viki.mode = 'off'; viki.dy = 0; hist = []; meetT = 0;
   resetCourse(Math.floor(Math.random() * 1e9));
 }
@@ -955,25 +1006,31 @@ function makeCloud() {
   const gapBelow = 92 + crng() * 24;
   return { kind: 'cloud', w: CLOUD.width, h: CLOUD.height, yOff: gapBelow + CLOUD.height, ph: crng() * 6, parts: [{ img: CLOUD, ox: 0, oy: 0, box: { x: 6, y: 6, w: CLOUD.width - 12, h: CLOUD.height - 12 } }] };
 }
-function makeHeart(cx, centerHeight) {
-  const gold = crng() < 0.07, ph = crng() * 6;
+function makeHeart(cx, centerHeight, goldChance) {
+  const gold = crng() < (goldChance || 0.07), ph = crng() * 6;
   return { wx: cx - HEART.width / 2, yOff: centerHeight + HEART.height / 2, ph, gone: false, missed: false, gold };
 }
 function makeFoe(cx, range, h) { return { id: ++foeSeq, wx0: cx - FOE[0].width / 2, range: Math.max(0, range), ph: crng() * 6, h, dead: false }; }
 const foeX = f => f.wx0 + f.range * Math.sin(gt * 1.5 + f.ph);
 function resetCourse(seed) {
   crng = seeded('course-' + seed);
-  genX = 820; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = []; gates = [];
-  lastGateLvl = 0; foeSeq = 0;
+  genX = 820; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = []; gates = []; ladders = []; springs = []; signs = [];
+  lastGateLvl = 0; foeSeq = 0; forceSeg = null;
 }
+const LEVEL_SIG = ['tower', 'tower', 'spring', 'lift', 'spring'];
 function pickSeg(lvl, days) {
+  if (forceSeg) { const s = forceSeg; forceSeg = null; return s; }
   const L = Math.min(lvl, 4);
   const w = {
-    plain: [6, 4, 3, 3, 2][L],
+    plain: [5, 3, 3, 2, 2][L],
     cloud: lvl === 0 ? (days > 50 ? 1 : 0) : [1, 2, 1, 2, 2][L],
-    plats: [2, 3, 3, 3, 4][L],
+    plats: [2, 2, 2, 2, 3][L],
+    tower: [1, 3, 1, 2, 2][L],
+    stairs: [1, 1, 2, 1, 2][L],
+    spring: [0, 0, 3, 1, 3][L],
+    lift: [0, 0, 0, 3, 2][L],
     pit: [0, 2, 2, 3, 3][L],
-    foe: [0, 0, 2, 2, 3][L]
+    foe: [0, 1, 2, 2, 3][L]
   };
   let total = 0;
   for (const k in w) total += w[k];
@@ -981,12 +1038,23 @@ function pickSeg(lvl, days) {
   for (const k in w) { r -= w[k]; if (r < 0) return k; }
   return 'plain';
 }
+function groundStuff(x0, x1, lvl) {
+  // a few ground obstacles under a high route so the low road has its own adventure
+  let x = x0 + 120;
+  while (x < x1 - 140) {
+    const r = crng();
+    if (r < 0.45) { const o = makeCactus(crng() < 0.6 ? 'small' : 'tall'); o.wx = x; obstacles.push(o); hearts.push(makeHeart(x + o.w / 2, 168)); x += o.w + 300 + crng() * 200; }
+    else if (r < 0.65 && lvl >= 2) { foes.push(makeFoe(x + 40, 30 + crng() * 30, 0)); x += 340 + crng() * 160; }
+    else { hearts.push(makeHeart(x + 20, 30)); hearts.push(makeHeart(x + 70, 30)); x += 260 + crng() * 160; }
+  }
+}
 function generateNext() {
   const x = genX, v = speedAtDist(x), days = x / PTS_DIV, lvl = levelIndexAt(x);
   if (lvl > lastGateLvl) {
     lastGateLvl = lvl;
     gates.push({ wx: x + 80, lvl, passed: false });
     hearts.push(makeHeart(x + 115, 150));
+    forceSeg = LEVEL_SIG[lvl % 5];
     genX = x + 560;
     return;
   }
@@ -1011,12 +1079,67 @@ function generateNext() {
       for (let k = 0; k < nh; k++) hearts.push(makeHeart(px + 30 + k * 55, ph + 32));
       if (i === 0 && crng() < 0.5) { const o = makeCactus(crng() < 0.5 ? 'small' : 'tall'); o.wx = px + w / 2 - o.w / 2; obstacles.push(o); }
       if (lvl >= 2 && crng() < 0.35) foes.push(makeFoe(px + w / 2, Math.min(w / 2 - 30, 50), ph));
-      const step = crng();
-      const gapP = 50 + Math.floor(crng() * 4) * 20;
+      const step = crng(), gapP = 50 + Math.floor(crng() * 4) * 20;
       px += w + (i < n - 1 ? gapP : 0);
       ph = step < 0.45 ? Math.min(ph + 60, 190) : step < 0.75 ? ph : Math.max(72, ph - 40);
     }
     len = px - x;
+  } else if (seg === 'tower') {
+    // a ladder up to a rooftop road; the low road keeps going underneath
+    const roofH = 200 + Math.floor(crng() * 5) * 30, lw = 84;
+    ladders.push({ wx: x, w: lw, h: roofH });
+    if (lvl === 0 || crng() < 0.25) signs.push({ wx: x - 230, text: 'JUMP ON THE LADDER' });
+    let rx = x, total = 0;
+    const n = 2 + Math.floor(crng() * 2);
+    for (let i = 0; i < n; i++) {
+      const w = 260 + Math.floor(crng() * 5) * 40;
+      plats.push({ wx: rx, w, h: roofH, roof: true });
+      for (let k = 0; k < Math.floor(w / 50); k++) hearts.push(makeHeart(rx + 30 + k * 50, roofH + 32, 0.18));
+      if (lvl >= 2 && i > 0 && crng() < 0.5) foes.push(makeFoe(rx + w / 2, Math.min(w / 2 - 40, 60), roofH));
+      const g = i < n - 1 ? 70 + Math.floor(crng() * 3) * 20 : 0;
+      rx += w + g; total = rx - x;
+    }
+    groundStuff(x + lw, x + total, lvl);
+    len = total;
+  } else if (seg === 'stairs') {
+    let px = x, ph = 70;
+    const n = 4 + Math.floor(crng() * 2);
+    for (let i = 0; i < n; i++) {
+      const w = 130 + Math.floor(crng() * 3) * 20;
+      plats.push({ wx: px, w, h: ph });
+      hearts.push(makeHeart(px + w / 2, ph + 32, i === n - 1 ? 0.5 : 0.07));
+      px += w + 30 + Math.floor(crng() * 3) * 15;
+      ph = Math.min(ph + 58 + Math.floor(crng() * 2) * 8, 360);
+    }
+    groundStuff(x, px, lvl);
+    len = px - x;
+  } else if (seg === 'spring') {
+    springs.push({ wx: x, w: SPRING[0].width, h: 0 });
+    if (lvl <= 2 && crng() < 0.6) signs.push({ wx: x - 120, text: 'BOUNCE!' });
+    const skyH = 330 + Math.floor(crng() * 3) * 30, sx = x + Math.round(v * 0.45);
+    let rx = sx;
+    const n = 2 + Math.floor(crng() * 2);
+    for (let i = 0; i < n; i++) {
+      const w = 200 + Math.floor(crng() * 4) * 40;
+      plats.push({ wx: rx, w, h: skyH, sky: true });
+      for (let k = 0; k < Math.floor(w / 46); k++) hearts.push(makeHeart(rx + 26 + k * 46, skyH + 32, 0.22));
+      rx += w + (i < n - 1 ? 70 + Math.floor(crng() * 3) * 20 : 0);
+    }
+    hearts.push(makeHeart(x + 120, 300)); hearts.push(makeHeart(x + 210, 360));
+    groundStuff(x + 80, rx, lvl);
+    len = rx - x;
+  } else if (seg === 'lift') {
+    let px = x;
+    const overPit = lvl >= 3 && crng() < 0.6, n = 1 + Math.floor(crng() * 2);
+    const span = n * 170 + 60;
+    if (overPit) pits.push({ wx: x + 40, w: span - 80 });
+    for (let i = 0; i < n; i++) {
+      const lift = { base: 50 + Math.floor(crng() * 3) * 10, amp: 70 + Math.floor(crng() * 3) * 15, ph: crng() * 6, w: 2.0 };
+      plats.push({ wx: px + 30, w: 120, h: lift.base, lift });
+      hearts.push(makeHeart(px + 90, lift.base + lift.amp * 2 + 40, 0.2));
+      px += 170;
+    }
+    len = span;
   } else if (seg === 'pit') {
     const jd = v * 0.62, maxW = Math.max(95, jd * 0.55);
     const w = Math.round(90 + crng() * (maxW - 90));
@@ -1040,37 +1163,70 @@ function generateNext() {
   }
   genX = x + len + gap;
 }
-function fillCourse() { let n = 0; while (genX < dist + W + 160 && n < 60) { generateNext(); n++; } }
+function fillCourse() { let n = 0; while (genX < dist + W + 200 && n < 60) { generateNext(); n++; } }
 function pruneCourse() {
   const keep = o => o.wx + (o.w || 60) - dist > -60;
   obstacles = obstacles.filter(o => o.wx + o.w - dist > -40);
-  plats = plats.filter(keep); pits = pits.filter(keep);
+  plats = plats.filter(keep); pits = pits.filter(keep); ladders = ladders.filter(keep); springs = springs.filter(keep);
+  signs = signs.filter(s => s.wx + 200 - dist > -60);
   foes = foes.filter(f => !f.dead && f.wx0 + f.range + 60 - dist > -60);
   gates = gates.filter(g => g.wx + 140 - dist > -60);
 }
 const sxOf = o => o.wx - dist;
 const bobOf = (ph, amp, f) => Math.sin(gt * f + ph) * amp;
+const platH = (p, t) => p.lift ? p.lift.base + p.lift.amp * (1 - Math.cos(t * p.lift.w + p.lift.ph)) : p.h;
 
-/* ---------------- Body physics: platforms, pits and ground (shared by both runners) ---------------- */
+/* ---------------- Body physics: ground, pits, platforms, ladders, springs and lifts ---------------- */
 function overPit(fx0, fx1) { for (const p of pits) if (fx0 >= p.wx - 2 && fx1 <= p.wx + p.w + 2) return true; return false; }
-function supportAt(fx0, fx1, dy) {
-  if (dy > 0.5) { for (const p of plats) if (fx1 > p.wx && fx0 < p.wx + p.w && Math.abs(p.h - dy) < 1) return p.h; return null; }
+function supportAt(fx0, fx1, dy, t) {
+  if (dy > 0.5) {
+    for (const p of plats) { if (fx1 > p.wx && fx0 < p.wx + p.w) { const h = platH(p, t); if (Math.abs(h - dy) < (p.lift ? 12 : 1)) return h; } }
+    return null;
+  }
   if (dy < -0.5) return null;
   return overPit(fx0, fx1) ? null : 0;
 }
-function landingAt(fx0, fx1, prevDy, dy) {
+function landingAt(fx0, fx1, prevDy, dy, t) {
   let top = null;
-  for (const p of plats) if (fx1 > p.wx && fx0 < p.wx + p.w && prevDy >= p.h - 0.01 && dy <= p.h) { if (top === null || p.h > top) top = p.h; }
+  for (const p of plats) {
+    if (!(fx1 > p.wx && fx0 < p.wx + p.w)) continue;
+    const h = platH(p, t);
+    if (prevDy >= h - (p.lift ? 12 : 0.01) && dy <= h && (top === null || h > top)) top = h;
+  }
   if (top !== null) return top;
   if (prevDy >= -0.01 && dy <= 0 && !overPit(fx0, fx1)) return 0;
   return null;
 }
-function stepBody(b, x, dt, local, wd) {
-  if (b.respawnT > 0) { b.respawnT -= dt; b.vy = 0; b.ground = false; if (b.respawnT > 0) return; }
+function stepBody(b, x, dt, local, wd, t) {
+  if (b.respawnT > 0) { b.respawnT -= dt; b.vy = 0; b.ground = false; b.climb = null; if (b.respawnT > 0) return; }
   const fx0 = wd + x + 20, fx1 = wd + x + 46;
+  if (b.climb) {
+    b.dy = Math.min(b.climb.to, b.dy + b.climb.v * dt);
+    if (b.dy >= b.climb.to - 0.01) { b.dy = b.climb.to; b.climb = null; b.vy = 0; b.ground = supportAt(fx0, fx1, b.dy, t) !== null; }
+    return;
+  }
+  if (!b.ground) {
+    for (const l of ladders) {
+      if (fx1 > l.wx && fx0 < l.wx + l.w && b.dy < l.h - 8 && b.dy > -40) {
+        const dur = Math.max(0.16, Math.min(0.34, (l.wx + l.w - fx0) / Math.max(1, speedAtDist(wd))));
+        b.climb = { to: l.h, v: (l.h - b.dy) / dur }; b.vy = 0;
+        if (local) { sfx.climb(); climbs++; }
+        return;
+      }
+    }
+  }
   if (b.ground) {
-    const s = supportAt(fx0, fx1, b.dy);
+    const s = supportAt(fx0, fx1, b.dy, t);
     if (s === null) { b.ground = false; b.vy = 0; } else b.dy = s;
+  }
+  if (b.ground) {
+    for (const sp of springs) {
+      if (fx1 > sp.wx + 6 && fx0 < sp.wx + sp.w - 6 && Math.abs(b.dy - sp.h) < 2) {
+        b.ground = false; b.vy = -SPRING_V; sp.boing = clock;
+        if (local) { sfx.spring(); buzz(20); if (inCoop()) sendState('spring'); }
+        break;
+      }
+    }
   }
   if (b.buffer > 0) b.buffer -= dt;
   if (!b.ground) {
@@ -1078,7 +1234,7 @@ function stepBody(b, x, dt, local, wd) {
     b.vy += GRAV * dt;
     b.dy -= b.vy * dt;
     if (b.vy > 0) {
-      const land = landingAt(fx0, fx1, prev, b.dy);
+      const land = landingAt(fx0, fx1, prev, b.dy, t);
       if (land !== null) {
         b.dy = land; b.vy = 0; b.ground = true;
         if (local && state === 'play' && meAlive && b.buffer > 0) jump();
@@ -1088,26 +1244,25 @@ function stepBody(b, x, dt, local, wd) {
     }
   }
 }
-function physics(dt, local) { stepBody(dino, dino.x, dt, !!local, dist); }
+function physics(dt, local) { stepBody(dino, dino.x, dt, !!local, dist, gt); }
 
 /* ---------------- Input ---------------- */
 function jump() {
-  if (dino.ground && dino.respawnT <= 0) {
+  if (dino.ground && dino.respawnT <= 0 && !dino.climb) {
     dino.vy = -JUMP_V; dino.ground = false; dino.buffer = 0;
     if (state === 'play') {
       sfx.jump(); puff(dino.x + 30, GROUND - 2 - dino.dy, 4);
       myLastJumpGt = gt;
       if (inCoop()) {
         sendState('jump');
-        const p = room.partner;
-        if (p && Math.abs(gt - (p.lastJumpGt || -99)) < 0.22) syncJump();
+        for (const p of peerList()) if (p.run === room.run && Math.abs(gt - (p.lastJumpGt || -99)) < 0.22) { syncJump(p); break; }
       }
     }
   } else dino.buffer = 0.13;
 }
 function press() { if (state === 'play' && meAlive && !(inCoop() && gt <= 0)) jump(); }
 function release() {
-  if (!dino.ground && dino.vy < -CUT_V) { dino.vy = -CUT_V; if (inCoop() && state === 'play') sendState('cut'); }
+  if (!dino.ground && !dino.climb && dino.vy < -CUT_V && dino.vy > -SPRING_V + 200) { dino.vy = -CUT_V; if (inCoop() && state === 'play') sendState('cut'); }
 }
 
 cv.addEventListener('pointerdown', e => { e.preventDefault(); press(); });
@@ -1133,6 +1288,7 @@ function show(id) {
   OVERLAYS.forEach(o => $(o).classList.toggle('show', o === id));
   current = id;
   controls.classList.toggle('show', id === null && state === 'play');
+  document.body.classList.toggle('playing', id === null && state === 'play');
   $('btnPause').style.display = inCoop() ? 'none' : '';
   if (id && id !== 'ovCoop') { const b = $(id).querySelector('.btn.primary:not([disabled])') || $(id).querySelector('button'); if (b) setTimeout(() => { try { b.focus({ preventScroll: true }); } catch (e) {} }, 30); }
 }
@@ -1372,10 +1528,12 @@ function onMonth(m) {
   saveFarthest();
 }
 function compareLine() {
-  const p = room && room.partner;
-  if (!p || !partnerInRun()) return '';
-  const me = Math.floor(score), them = p.score;
-  return me > them ? 'You lead ' + me + ' to ' + them + '! 👑' : me < them ? partnerName() + ' leads ' + them + ' to ' + me + '. Catch up!' : 'Neck and neck at ' + me + '!';
+  const others = peerList().filter(p => p.run === room.run && peerHere(p));
+  if (!others.length) return '';
+  const me = Math.floor(score);
+  let top = null;
+  for (const p of others) if (!top || p.score > top.score) top = p;
+  return me > top.score ? 'You lead with ' + me + '! 👑' : me < top.score ? top.name + ' leads with ' + top.score + '. Catch up!' : 'Neck and neck at ' + me + '!';
 }
 function onLevel(l) {
   curLevel = l;
@@ -1388,9 +1546,9 @@ function onLevel(l) {
   else {
     const gained = lives < 3;
     lives = Math.min(3, lives + 1);
-    sub = inCoop() ? (gained ? '+1 life. ' : '') + compareLine() : gained ? 'Checkpoint! You got a life back.' : 'Checkpoint! Keep going.';
+    sub = (gained ? '+1 life. ' : '') + (inCoop() ? compareLine() : LEVEL_HINTS[l % 5]);
   }
-  toast('Level ' + (l + 1) + ' · ' + levelName(l), sub || 'Checkpoint!', 3000);
+  toast('Level ' + (l + 1) + ' · ' + levelName(l), sub || LEVEL_HINTS[l % 5], 3200);
 }
 function onToday() {
   reachedToday = true;
@@ -1401,8 +1559,8 @@ function onToday() {
   if (inCoop()) { toast('Today · ' + fmt(TODAY), 'You made it to today together! Keep running into your future.', 3600); return; }
   if (letterSeen !== MONTHS) {
     letterSeen = MONTHS; store.set('letterSeen', letterSeen);
-    state = 'celebrate'; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = [];
-    if (dino.dy < 0 || dino.respawnT > 0) { dino.dy = 0; dino.vy = 0; dino.ground = true; dino.respawnT = 0; }
+    state = 'celebrate'; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = []; ladders = []; springs = []; signs = [];
+    dino.dy = 0; dino.vy = 0; dino.ground = true; dino.respawnT = 0; dino.climb = null;
     genX = Math.max(genX, dist + W + 200);
     viki.mode = 'enter'; viki.x = W + 10; viki.dy = 0; viki.anim = 0;
     viki.sp = Math.max(300, (W + 10 - (dino.x + 60)) / 1.3);
@@ -1433,7 +1591,7 @@ function loseLife(kind) {
 }
 function onHit(o) { o.hit = true; loseLife(o.kind); }
 function fellInPit() {
-  dino.dy = 150; dino.vy = 0; dino.ground = false; dino.respawnT = 0.9;
+  dino.dy = 150; dino.vy = 0; dino.ground = false; dino.respawnT = 0.9; dino.climb = null;
   if (shieldOn) { loseLife('pit'); return; }
   const hadLives = lives;
   loseLife('pit');
@@ -1451,14 +1609,15 @@ function stomp(f) {
   floatText(dino.x + 30, dinoTop() - 14, 'Stomp! +' + g, '#7a3cc4');
   progress('stompRun', run.stomps);
   if (inCoop()) { NET.send('k', { id: f.id, run: room.run }, true); sendState('stomp'); }
+  dino.climb = null;
 }
-function syncJump() {
+function syncJump(p) {
   if (!meAlive || gt - lastSyncGt < 0.6) return;
   lastSyncGt = gt; syncJumps++;
   const g = 10 * (doubleT > 0 ? 2 : 1);
   score += g;
   sfx.sync();
-  const mx = (dino.x + slotFor(room.partner.role)) / 2 + 30;
+  const mx = (dino.x + p.x) / 2 + 30;
   burstHearts(mx, GROUND - 130 - dino.dy, REDUCED ? 3 : 8);
   floatText(mx, GROUND - 150 - dino.dy, 'In sync! +' + g, '#ff3d7f');
 }
@@ -1482,13 +1641,15 @@ function collectHeart(h) {
   progress('heartsDay', daily.c.heartsDay);
   progress('combo', mult);
   if (h.gold) { run.golden++; daily.c.golden++; progress('golden', daily.c.golden); }
-  if (canRevivePartner()) {
+  const target = reviveTarget();
+  if (target) {
+    if (rvTarget !== target.id) { rvTarget = target.id; rv = 0; }
     rv++;
     if (rv >= 3) {
-      rv = 0; reviveSerial++; revivesGiven++; reviveWaitUntil = Date.now() + 2500;
+      rv = 0; rvTarget = ''; reviveSerial++; reviveTo = target.id; revivesGiven++; reviveWaitUntil = Date.now() + 2500;
       sfx.revive(); buzz([40, 30, 40]);
-      floatText(slotFor(room.partner.role) + 30, GROUND - 110, 'Back to life!', '#ff3d7f');
-      toast('You brought ' + partnerName() + ' back!', 'Love wins again. Keep running, both of you.', 2600);
+      floatText(target.x + 30, GROUND - 110, 'Back to life!', '#ff3d7f');
+      toast('You brought ' + target.name + ' back!', 'Love wins again. Keep running, all of you.', 2600);
     }
     sendState('');
   }
@@ -1617,7 +1778,7 @@ function stepWorld(dt) {
     for (const h of hist) { if (h[0] <= gt - 0.11) v = h[1]; else break; }
     viki.dy = v;
   }
-  if (inCoop() && room.partner && room.partner.body && room.partner.alive && room.partner.run === room.run) stepBody(room.partner.body, slotFor(room.partner.role), dt, false, dist);
+  if (inCoop()) for (const p of peerList()) if (p.body && p.alive && p.run === room.run) stepBody(p.body, p.x, dt, false, dist, gt);
   for (const g of gates) if (!g.passed && g.wx + 20 < dist + dino.x + 30) { g.passed = true; if (state === 'play') onLevel(g.lvl); }
   trackPasses();
   if (magnetT > 0 && meAlive) {
@@ -1629,7 +1790,7 @@ function stepWorld(dt) {
   }
   if (meAlive && state === 'play' && dino.respawnT <= 0) {
     if (inv <= 0) for (const o of obstacles) { if (!o.hit && hitObstacle(o)) { onHit(o); break; } }
-    if (state === 'play' && meAlive) checkFoes();
+    if (state === 'play' && meAlive && !dino.climb) checkFoes();
   }
   pruneCourse();
   if (state !== 'play') return;
@@ -1661,8 +1822,14 @@ function milestones(prev) {
   if (crossed) { lastMonth = crossed; onMonth(crossed); }
   if (!reachedToday && d1 >= TOTAL_DAYS) onToday();
 }
+function updateCamera(dt) {
+  const topRoom = HUD + 150, need = (GROUND - 75 - (meAlive ? dino.dy : 150)) - topRoom;
+  const target = Math.max(0, -need);
+  camY += (target - camY) * Math.min(1, dt * (target > camY ? 7 : 3));
+}
 function updateFx(dt) {
   clock += dt;
+  updateCamera(dt);
   if (themeK < 1) themeK = Math.min(1, themeK + dt / 1.5);
   for (const p of parts) { p.age += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.rot !== undefined) p.rot += p.vr * dt; }
   parts = parts.filter(p => p.age < p.life);
@@ -1699,12 +1866,15 @@ function tick(dt) {
   updateFx(dt);
 }
 
-/* ---------------- Playing together (two phones) ---------------- */
+/* ---------------- Playing together (up to 5 phones) ---------------- */
 const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const FAST = new Set(['st', 'ping', 'pong']);
-let myRole = store.get('role', 'her') === 'purest' ? 'purest' : 'her';
-const RTC = { pc: null, dc: null, open: false, pend: [], remoteSet: false, tries: 0, lastTry: 0 };
+const MAX_PLAYERS = 5;
+const TEST_LAG = +store.get('lag', 0) || 0, NO_RTC = !!store.get('noRtc', false);
+let myChar = validChar(store.get('char', 'sunshine'));
+let myName = cleanName(store.get('name', '')) || CHARS[myChar].label;
+function cleanName(s) { return String(s || '').replace(/[\u0000-\u001f\u007f<>]/g, '').trim().slice(0, 12); }
 const NET = {
   id: 'p' + Math.random().toString(36).slice(2, 10),
   client: null, base: '',
@@ -1713,22 +1883,25 @@ const NET = {
     if (!this.ready()) return;
     try { this.client.publish(this.base + '/' + type, JSON.stringify(Object.assign({ from: this.id }, data)), { qos: 0 }); } catch (e) {}
   },
-  dc(type, data) {
-    if (!RTC.open || !RTC.dc || RTC.dc.readyState !== 'open') return false;
-    try { RTC.dc.send(JSON.stringify(Object.assign({ from: this.id, _t: type }, data))); return true; } catch (e) { return false; }
-  },
   send(type, data, both) {
-    const viaDc = this.dc(type, data);
-    if (!viaDc || both || !FAST.has(type)) this.mq(type, data);
+    let allDc = true;
+    const json = JSON.stringify(Object.assign({ from: this.id, _t: type }, data));
+    for (const p of peerList()) {
+      const r = p.rtc;
+      if (r.open && r.dc && r.dc.readyState === 'open') { try { r.dc.send(json); } catch (e) { allDc = false; } }
+      else allDc = false;
+    }
+    if (both || !FAST.has(type) || !allDc) this.mq(type, data);
   },
   close() {
-    rtcReset();
+    if (room) for (const p of peerList()) rtcReset(p);
     const c = this.client; this.client = null;
     if (!c) return;
     try { c.publish(this.base + '/bye', JSON.stringify({ from: this.id }), { qos: 0 }); } catch (e) {}
     setTimeout(() => { try { c.end(true); } catch (e) {} }, 150);
   }
 };
+function deliver(type, m) { if (TEST_LAG) setTimeout(() => handleMsg(type, m), TEST_LAG + Math.random() * 60); else handleMsg(type, m); }
 function brokerList() { const o = store.get('brokers', null); return Array.isArray(o) && o.length ? o : BROKERS; }
 let mqttLoading = null;
 function loadMqtt() {
@@ -1763,104 +1936,154 @@ function connectBroker(url) {
   }));
 }
 
-/* Direct phone-to-phone link (WebRTC), set up through the relay; the relay stays as the fallback */
-function rtcReset() {
-  try { if (RTC.dc) RTC.dc.close(); } catch (e) {}
-  try { if (RTC.pc) RTC.pc.close(); } catch (e) {}
-  RTC.pc = null; RTC.dc = null; RTC.open = false; RTC.pend = []; RTC.remoteSet = false;
+/* Direct phone-to-phone links (WebRTC), one per pair, set up through the relay; the relay stays as the fallback */
+function rtcReset(p) {
+  const r = p.rtc;
+  try { if (r.dc) r.dc.close(); } catch (e) {}
+  try { if (r.pc) r.pc.close(); } catch (e) {}
+  r.pc = null; r.dc = null; r.open = false; r.pend = []; r.remoteSet = false;
 }
-function rtcChannel(ch) {
-  RTC.dc = ch;
+function rtcChannel(p, ch) {
+  p.rtc.dc = ch;
   ch.onopen = () => {
-    RTC.open = true;
-    if (room && !room.host) { room.syncWin = []; startSync(8); }
+    p.rtc.open = true;
+    if (room && !room.host && p.id === room.hostId) { room.syncWin = []; startSync(8); }
     if (current === 'ovRoom') renderRoom();
   };
-  ch.onclose = () => { RTC.open = false; if (current === 'ovRoom') renderRoom(); };
+  ch.onclose = () => { p.rtc.open = false; };
   ch.onmessage = e => {
     let m;
     try { m = JSON.parse(e.data); } catch (x) { return; }
     if (m && typeof m._t === 'string') deliver(m._t, m);
   };
 }
-function rtcNewPc() {
+function rtcNewPc(p) {
   if (typeof RTCPeerConnection === 'undefined') return null;
-  rtcReset();
+  rtcReset(p);
   let pc;
   try { pc = new RTCPeerConnection({ iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }, { urls: 'stun:global.stun.twilio.com:3478' }] }); }
   catch (e) { return null; }
-  RTC.pc = pc;
-  pc.onicecandidate = e => { if (e.candidate && room && room.partner) NET.mq('sig', { to: room.partner.id, cand: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate }); };
-  pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') { RTC.open = false; } };
+  p.rtc.pc = pc;
+  pc.onicecandidate = e => { if (e.candidate) NET.mq('sig', { to: p.id, cand: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate }); };
+  pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') p.rtc.open = false; };
   return pc;
 }
-const TEST_LAG = +store.get('lag', 0) || 0, NO_RTC = !!store.get('noRtc', false);
-function deliver(type, m) { if (TEST_LAG) setTimeout(() => handleMsg(type, m), TEST_LAG + Math.random() * 60); else handleMsg(type, m); }
-async function rtcOffer() {
-  if (!room || !room.host || !partnerHere() || RTC.open || NO_RTC) return;
-  RTC.tries++; RTC.lastTry = Date.now();
-  const pc = rtcNewPc();
+async function rtcOffer(p) {
+  if (NO_RTC || p.rtc.open) return;
+  p.rtc.tries++; p.rtc.lastTry = Date.now();
+  const pc = rtcNewPc(p);
   if (!pc) return;
   try {
-    rtcChannel(pc.createDataChannel('g', { ordered: false, maxRetransmits: 0 }));
+    rtcChannel(p, pc.createDataChannel('g', { ordered: false, maxRetransmits: 0 }));
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-    NET.mq('sig', { to: room.partner.id, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+    NET.mq('sig', { to: p.id, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
   } catch (e) {}
 }
 async function rtcSignal(m) {
-  if (!room || m.to !== NET.id || !room.partner || m.from !== room.partner.id) return;
+  if (!room || m.to !== NET.id) return;
+  const p = room.peers[m.from];
+  if (!p) return;
+  const r = p.rtc;
   try {
-    if (m.sdp && m.sdp.type === 'offer' && !room.host) {
-      const pc = rtcNewPc();
+    if (m.sdp && m.sdp.type === 'offer') {
+      const pc = rtcNewPc(p);
       if (!pc) return;
-      pc.ondatachannel = e => rtcChannel(e.channel);
-      await pc.setRemoteDescription(m.sdp); RTC.remoteSet = true;
-      for (const c of RTC.pend.splice(0)) { try { await pc.addIceCandidate(c); } catch (e) {} }
+      pc.ondatachannel = e => rtcChannel(p, e.channel);
+      await pc.setRemoteDescription(m.sdp); r.remoteSet = true;
+      for (const c of r.pend.splice(0)) { try { await pc.addIceCandidate(c); } catch (e) {} }
       const ans = await pc.createAnswer();
       await pc.setLocalDescription(ans);
       NET.mq('sig', { to: m.from, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
-    } else if (m.sdp && m.sdp.type === 'answer' && room.host && RTC.pc && !RTC.remoteSet) {
-      await RTC.pc.setRemoteDescription(m.sdp); RTC.remoteSet = true;
-      for (const c of RTC.pend.splice(0)) { try { await RTC.pc.addIceCandidate(c); } catch (e) {} }
+    } else if (m.sdp && m.sdp.type === 'answer' && r.pc && !r.remoteSet) {
+      await r.pc.setRemoteDescription(m.sdp); r.remoteSet = true;
+      for (const c of r.pend.splice(0)) { try { await r.pc.addIceCandidate(c); } catch (e) {} }
     } else if (m.cand) {
-      if (RTC.pc && RTC.remoteSet) { try { await RTC.pc.addIceCandidate(m.cand); } catch (e) {} }
-      else RTC.pend.push(m.cand);
+      if (r.pc && r.remoteSet) { try { await r.pc.addIceCandidate(m.cand); } catch (e) {} }
+      else r.pend.push(m.cand);
     }
   } catch (e) {}
 }
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const validOutfit = id => OUTFITS.some(o => o.id === id) ? id : 'berry';
-const partnerHere = () => !!(room && room.partner && Date.now() - room.partner.last < 5000);
-const partnerInRun = () => partnerHere() && room.partner.run === room.run;
-function canRevivePartner() { return inCoop() && partnerInRun() && !room.partner.alive && meAlive && Date.now() > reviveWaitUntil; }
+const peerList = () => room ? Object.values(room.peers) : [];
+const peerHere = p => !!p && Date.now() - p.last < 5000;
+const peersInRun = () => peerList().filter(p => p.run === room.run && peerHere(p));
+function reviveTarget() {
+  if (!inCoop() || !meAlive || Date.now() < reviveWaitUntil) return null;
+  let t = null;
+  for (const p of peersInRun()) if (!p.alive && (!t || p.slot < t.slot)) t = p;
+  return t;
+}
 function shareUrl() { return location.href.split('#')[0] + '#' + room.code; }
+function newPeer(id) {
+  return { id, name: 'Friend', char: 'mint', outfit: 'berry', slot: 0, x: SLOTS[0], last: Date.now(), alive: true, lives: 3, inv: false, score: 0, rv: 0, rs: 0, run: 0,
+    snapGt: -1e9, lastJumpGt: -99, handled: 0, dyShown: 0, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0, climb: null },
+    rtc: { pc: null, dc: null, open: false, pend: [], remoteSet: false, tries: 0, lastTry: 0 } };
+}
+function applyRoster(list) {
+  if (!Array.isArray(list)) return;
+  const ids = new Set();
+  list.slice(0, MAX_PLAYERS).forEach((e, i) => {
+    if (!e || typeof e.id !== 'string') return;
+    ids.add(e.id);
+    if (e.id === NET.id) { room.mySlot = i; return; }
+    let p = room.peers[e.id];
+    if (!p) { p = room.peers[e.id] = newPeer(e.id); if (state !== 'play') sfx.heart(); }
+    p.name = cleanName(e.name) || 'Friend'; p.char = validChar(e.char); p.slot = i; p.x = SLOTS[i];
+  });
+  for (const id in room.peers) if (!ids.has(id)) { rtcReset(room.peers[id]); delete room.peers[id]; }
+  room.roster = list.slice(0, MAX_PLAYERS).map(e => ({ id: e.id, name: cleanName(e.name) || 'Friend', char: validChar(e.char) }));
+  room.inRoster = ids.has(NET.id);
+}
 
-function paintRoles() {
-  $('roleHer').setAttribute('aria-pressed', String(myRole === 'her'));
-  $('rolePurest').setAttribute('aria-pressed', String(myRole === 'purest'));
+/* Lobby: pick a runner and a name */
+function previewCanvas(char) {
+  const c = document.createElement('canvas'), img = runnerImg(char, 'stand', outfit);
+  c.width = img.width; c.height = img.height;
+  const g = c.getContext('2d');
+  if (char === 'purest') { g.translate(img.width, 0); g.scale(-1, 1); }
+  g.drawImage(img, 0, 0);
+  c.setAttribute('aria-hidden', 'true');
+  return c;
+}
+function paintChars() {
+  const grid = $('charGrid'); grid.innerHTML = '';
+  CHAR_IDS.forEach(id => {
+    const b = el('button', 'cpick'); b.type = 'button';
+    b.setAttribute('aria-pressed', String(id === myChar));
+    b.appendChild(previewCanvas(id));
+    b.appendChild(el('span', '', CHARS[id].label));
+    b.addEventListener('click', () => {
+      const wasDefault = !$('nameInput').value.trim() || CHAR_IDS.some(c => CHARS[c].label === $('nameInput').value.trim());
+      myChar = id; store.set('char', myChar);
+      if (wasDefault) { $('nameInput').value = CHARS[id].label; myName = CHARS[id].label; store.set('name', myName); }
+      paintChars();
+    });
+    grid.appendChild(b);
+  });
 }
 function openCoop(err) {
-  paintRoles();
+  paintChars();
+  $('nameInput').value = myName;
   $('coopErr').hidden = !err; if (err) $('coopErr').textContent = err;
   show('ovCoop');
 }
+$('nameInput').addEventListener('input', () => { myName = cleanName($('nameInput').value) || CHARS[myChar].label; store.set('name', myName); });
 $('btnTogether').addEventListener('click', () => { audio(); openCoop(); });
 $('btnCoopBack').addEventListener('click', () => { fillStart(); show('ovStart'); });
-$('roleHer').addEventListener('click', () => { myRole = 'her'; store.set('role', myRole); paintRoles(); });
-$('rolePurest').addEventListener('click', () => { myRole = 'purest'; store.set('role', myRole); paintRoles(); });
 $('btnCreate').addEventListener('click', () => {
   audio();
   let c = '';
   for (let i = 0; i < 4; i++) c += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
-  openRoom(c, true, myRole, 0);
+  openRoom(c, true, 0);
 });
 function tryJoin() {
   audio();
   const c = $('joinCode').value.trim().toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1').replace(/[^A-Z0-9]/g, '');
   if (!/^[A-Z2-9]{4}[0-9]$/.test(c)) { openCoop('That code does not look right. It has 5 characters, like K7QD0.'); return; }
-  openRoom(c, false, null, +c[4]);
+  openRoom(c, false, +c[4]);
 }
 $('btnJoin').addEventListener('click', tryJoin);
 $('joinCode').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tryJoin(); } });
@@ -1869,9 +2092,13 @@ $('btnCoopLeave').addEventListener('click', leaveRoom);
 $('btnStartCoop').addEventListener('click', hostStart);
 $('btnCoopAgain').addEventListener('click', hostStart);
 
-async function openRoom(code, host, role, brokerIdx) {
+async function openRoom(code, host, brokerIdx) {
   if (room) NET.close();
-  const me = room = { code, host, role, partner: null, synced: host, offset: 0, offApplied: 0, rtt: 0, syncWin: [], syncing: false, run: 0, t0Host: 0, t0Local: 0, status: 'Connecting…', err: false, offline: false };
+  const me = room = {
+    code, host, hostId: host ? NET.id : null, peers: {}, roster: host ? [{ id: NET.id, name: myName, char: myChar }] : [], mySlot: 0, inRoster: host,
+    synced: host, offset: 0, offApplied: 0, rtt: 0, syncWin: [], syncing: false, run: 0, t0Host: 0, t0Local: 0, joinedAt: Date.now(),
+    status: 'Connecting…', err: false, offline: false
+  };
   renderRoom(); show('ovRoom');
   const list = brokerList();
   let client = null, idx = brokerIdx;
@@ -1890,7 +2117,7 @@ async function openRoom(code, host, role, brokerIdx) {
   }
   if (host) me.code = code + idx;
   NET.client = client;
-  NET.base = 'runtoyou/v2/' + me.code;
+  NET.base = 'runtoyou/v3/' + me.code;
   client.subscribe(NET.base + '/+', { qos: 0 });
   client.on('message', (topic, payload) => {
     let m;
@@ -1901,6 +2128,7 @@ async function openRoom(code, host, role, brokerIdx) {
   client.on('connect', () => { if (room === me) { me.offline = false; client.subscribe(NET.base + '/+', { qos: 0 }); sendHi(); renderRoom(); } });
   try { history.replaceState(null, '', '#' + me.code); } catch (e) {}
   sendHi();
+  if (host) sendRoster();
   renderRoom();
 }
 function leaveRoom() {
@@ -1910,52 +2138,56 @@ function leaveRoom() {
   state = 'start'; hideToast(); reset();
   fillStart(); show('ovStart');
 }
-function linkLabel() {
-  const ms = room && room.rtt ? ' · ' + Math.round(room.rtt) + ' ms' : '';
-  return RTC.open ? 'Direct link' + ms : 'Via relay' + ms;
-}
 function renderRoom() {
   if (!room) return;
   const full = room.code.length === 5;
   $('roomCode').textContent = full ? room.code : '· · · ·';
-  const p = partnerHere() ? room.partner : null;
+  const here = peerList().filter(peerHere);
   let st = room.status;
   if (!room.err) {
     if (room.offline) st = 'Reconnecting…';
     else if (full && NET.ready()) {
-      if (room.host) st = p ? partnerName() + ' is here! Tap Start when you are both ready.' : 'Send the invite, then wait here for ' + partnerName() + ' to join.';
-      else st = p ? 'You are in! Waiting for ' + partnerName() + ' to start the run…' : 'Looking for the room… Make sure the other phone is still on the room screen.';
+      if (room.host) st = here.length ? plural(here.length + 1, 'player') + ' here. Tap Start when everyone is ready, or invite more (up to 5).' : 'Send the invite, then wait here for your friends to join.';
+      else if (!room.inRoster && room.roster.length >= MAX_PLAYERS && Date.now() - room.joinedAt > 4000) st = 'This room is full. Up to 5 players can run together.';
+      else if (!room.inRoster) st = 'Joining the room…';
+      else st = 'You are in! Waiting for the host to start the run…';
     }
   }
   $('roomStatus').textContent = st;
   $('roomStatus').classList.toggle('err', !!room.err);
   const chips = $('roomChips'); chips.innerHTML = '';
-  chips.appendChild(chip('You: ' + (room.role ? NAMES[room.role] : '…'), 'ok'));
-  chips.appendChild(p ? chip(NAMES[p.role] + ': here', 'ok') : chip(room.host ? 'Waiting for ' + partnerName() : 'Not connected yet'));
-  if (p) chips.appendChild(chip(linkLabel(), RTC.open ? 'ok' : ''));
+  const direct = here.filter(p => p.rtc.open).length;
+  if (here.length) chips.appendChild(chip(direct === here.length ? 'Direct link' + (room.rtt ? ' · ' + Math.round(room.rtt) + ' ms' : '') : direct ? 'Partly direct' : 'Via relay' + (room.rtt ? ' · ' + Math.round(room.rtt) + ' ms' : ''), direct === here.length ? 'ok' : ''));
+  const ul = $('roomList'); ul.innerHTML = '';
+  room.roster.forEach((e, i) => {
+    const isMe = e.id === NET.id, p = room.peers[e.id];
+    const li = el('li', isMe ? 'me' : '');
+    li.appendChild(previewCanvas(e.char));
+    li.appendChild(el('span', '', e.name + (isMe ? ' (you)' : '')));
+    li.appendChild(el('span', 'tag', i === 0 ? 'Host' : isMe || peerHere(p) ? 'Here' : 'Offline'));
+    ul.appendChild(li);
+  });
   $('hostCtrls').style.display = room.host && full && !room.err ? '' : 'none';
   if (full) $('btnInvite').href = 'https://wa.me/?text=' + encodeURIComponent('Come run with me! 💗 Tap to join our game (room ' + room.code + '): ' + shareUrl());
-  $('btnStartCoop').disabled = !p || !NET.ready();
-  $('btnStartCoop').textContent = p && !p.synced ? 'Start together (syncing…)' : 'Start together';
+  $('btnStartCoop').disabled = !here.length || !NET.ready();
 }
 function sendHi() {
   if (!room) return;
-  NET.send('hi', { role: room.role, host: room.host, outfit, synced: room.host || room.synced, run: room.run || 0, rtt: Math.round(room.rtt || 0), p2p: RTC.open });
+  NET.send('hi', { host: room.host, name: myName, char: myChar, outfit, synced: room.host || room.synced, run: room.run || 0, rtt: Math.round(room.rtt || 0) });
+}
+function sendRoster() {
+  if (!room || !room.host) return;
+  room.roster = room.roster.map(e => e.id === NET.id ? { id: NET.id, name: myName, char: myChar } : e);
+  NET.send('ros', { list: room.roster, run: room.run || 0 });
+  applyRoster(room.roster);
 }
 function sendState(kind) {
   if (!inCoop()) return;
   NET.send('st', {
     run: room.run, gt: Math.round(gt * 1000) / 1000, dy: Math.round(dino.dy * 10) / 10, vy: Math.round(dino.vy), g: dino.ground ? 1 : 0, rsp: Math.round(dino.respawnT * 1000) / 1000,
-    alive: meAlive, lives, inv: inv > 0, score: Math.floor(score), outfit, rv, rs: reviveSerial, rto: room.partner ? room.partner.id : '', jk: kind || '', lv: curLevel
+    cl: dino.climb ? [Math.round(dino.climb.to), Math.round(dino.climb.v)] : 0,
+    alive: meAlive, lives, inv: inv > 0, score: Math.floor(score), outfit, rv, rs: reviveSerial, rto: reviveTo, jk: kind || '', lv: curLevel
   }, !!kind);
-}
-function ensurePartner(id) {
-  if (!room.partner || room.partner.id !== id) {
-    room.partner = { id, role: 'purest', outfit: 'berry', last: Date.now(), alive: true, lives: 3, inv: false, score: 0, dyShown: 0, rv: 0, rs: 0, run: 0, synced: false, snapGt: -1e9, lastJumpGt: -99, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0 } };
-    rtcReset(); RTC.tries = 0;
-    if (state !== 'play') sfx.heart();
-  }
-  return room.partner;
 }
 function startSync(n) {
   if (!room || room.host) return;
@@ -1964,30 +2196,40 @@ function startSync(n) {
   const me = room;
   const iv = setInterval(() => {
     if (room !== me || k++ >= (n || 8)) { clearInterval(iv); me.syncing = false; return; }
-    NET.send('ping', { t: Date.now() });
+    NET.send('ping', { t: Date.now(), to: me.hostId });
   }, 180);
 }
 function handleMsg(type, m) {
   if (!room || !m || typeof m !== 'object' || typeof m.from !== 'string' || m.from === NET.id) return;
   const now = Date.now();
   if (type === 'hi') {
-    const role = m.role === 'purest' ? 'purest' : 'her';
-    if (room.host === !!m.host) return;
-    if (room.partner && room.partner.id !== m.from && partnerHere()) return;
-    if (!room.host) room.role = role === 'her' ? 'purest' : 'her';
-    const isNew = !room.partner || room.partner.id !== m.from;
-    const p = ensurePartner(m.from);
-    if (isNew) sendHi();
-    p.role = room.role === 'her' ? 'purest' : 'her';
-    p.outfit = validOutfit(m.outfit); p.synced = !!m.synced; p.last = now;
-    if (room.host && m.rtt) room.rtt = +m.rtt || room.rtt;
-    if (!room.host && !room.synced && !room.syncing) startSync(8);
-    if (room.host && !RTC.open && RTC.tries < 4 && now - RTC.lastTry > 9000) rtcOffer();
+    if (m.host) { if (!room.host) room.hostId = m.from; else return; }
+    if (room.host && !m.host) {
+      const known = room.roster.find(e => e.id === m.from);
+      if (known) { known.name = cleanName(m.name) || 'Friend'; known.char = validChar(m.char); }
+      else if (room.roster.length < MAX_PLAYERS && !(inCoop() && state === 'play')) { room.roster.push({ id: m.from, name: cleanName(m.name) || 'Friend', char: validChar(m.char) }); sendRoster(); sendHi(); }
+      else return;
+    }
+    const p = room.peers[m.from];
+    if (p) {
+      p.last = now; p.outfit = validOutfit(m.outfit);
+      if (m.name) p.name = cleanName(m.name) || p.name;
+      if (room.host && m.rtt && p.slot === 1) room.rtt = +m.rtt || room.rtt;
+    }
+    if (!room.host && m.host && !room.synced && !room.syncing) startSync(8);
+    if (current === 'ovRoom') renderRoom();
+    return;
+  }
+  if (type === 'ros') {
+    if (room.host || (room.hostId && m.from !== room.hostId)) return;
+    room.hostId = m.from;
+    applyRoster(m.list);
+    for (const p of peerList()) if (p.id === m.from) p.last = now;
     if (current === 'ovRoom') renderRoom();
     return;
   }
   if (type === 'sig') { rtcSignal(m); return; }
-  if (type === 'ping') { if (room.host) NET.send('pong', { to: m.from, t: +m.t || 0, ht: Date.now() }); return; }
+  if (type === 'ping') { if (room.host && (!m.to || m.to === NET.id)) NET.send('pong', { to: m.from, t: +m.t || 0, ht: Date.now() }); return; }
   if (type === 'pong') {
     if (room.host || m.to !== NET.id) return;
     const rtt = now - (+m.t || 0);
@@ -2001,36 +2243,40 @@ function handleMsg(type, m) {
     return;
   }
   if (type === 'start') {
-    if (room.host || !room.partner || m.from !== room.partner.id) return;
+    if (room.host || m.from !== room.hostId) return;
     const run = +m.run, seed = +m.seed, t0 = +m.t0;
     if (!run || run === room.run || !isFinite(seed) || !isFinite(t0)) return;
+    applyRoster(m.list);
+    if (!room.inRoster) return;
     if (!room.synced) { room.offset = (t0 - 3600) - (now - 150); room.offApplied = room.offset; }
     beginCoopRun(seed, t0, run);
     return;
   }
+  const p = room.peers[m.from];
+  if (!p) return;
+  p.last = now;
   if (type === 'st') {
-    const p = room.partner;
-    if (!p || p.id !== m.from) return;
     const wasAlive = p.alive && p.run === room.run;
-    p.last = now; p.run = +m.run || 0;
+    p.run = +m.run || 0;
     p.alive = !!m.alive; p.lives = clamp(m.lives | 0, 0, 3); p.inv = !!m.inv;
     p.score = clamp(m.score | 0, 0, 1e7); p.outfit = validOutfit(m.outfit); p.rv = clamp(m.rv | 0, 0, 3); p.rs = m.rs | 0;
     const mg = +m.gt;
     if (p.run === room.run && isFinite(mg) && mg > p.snapGt) {
       p.snapGt = mg;
-      p.body = { dy: clamp(+m.dy || 0, -100, 600), vy: clamp(+m.vy || 0, -2000, 3000), ground: !!m.g, respawnT: clamp(+m.rsp || 0, 0, 2), buffer: 0 };
+      const cl = Array.isArray(m.cl) ? { to: clamp(+m.cl[0] || 0, 0, 800), v: clamp(+m.cl[1] || 0, 0, 5000) } : null;
+      p.body = { dy: clamp(+m.dy || 0, -100, 800), vy: clamp(+m.vy || 0, -2000, 3000), ground: !!m.g, respawnT: clamp(+m.rsp || 0, 0, 2), buffer: 0, climb: cl && cl.v > 0 ? cl : null };
       if (inCoop() && gt > mg) {
         let t = mg, n = 0;
-        while (t < gt - 1e-4 && n < 120) { const h = Math.min(1 / 120, gt - t); t += h; stepBody(p.body, slotFor(p.role), h, false, distAt(t)); n++; }
+        while (t < gt - 1e-4 && n < 120) { const h = Math.min(1 / 120, gt - t); t += h; stepBody(p.body, p.x, h, false, distAt(t), t); n++; }
       }
       if (m.jk === 'jump') {
         p.lastJumpGt = mg;
-        if (inCoop() && state === 'play' && Math.abs(mg - myLastJumpGt) < 0.22) syncJump();
+        if (inCoop() && state === 'play' && Math.abs(mg - myLastJumpGt) < 0.22) syncJump(p);
       }
     }
     if (inCoop() && p.run === room.run && state === 'play') {
-      if (wasAlive && !p.alive && meAlive) { toast(partnerName() + ' is down!', 'Catch 3 hearts or reach the next level to bring ' + pron() + ' back.', 3000); sfx.hit(); buzz(50); }
-      if (m.rto === NET.id && p.rs > handledRevive) { handledRevive = p.rs; if (!meAlive) reviveMe(false); }
+      if (wasAlive && !p.alive && meAlive) { toast(p.name + ' is down!', 'Catch 3 hearts or reach the next level gate to bring them back.', 3000); sfx.hit(); buzz(50); }
+      if (m.rto === NET.id && p.rs > p.handled) { p.handled = p.rs; if (!meAlive) reviveMe(false, p.name); }
     }
     return;
   }
@@ -2041,18 +2287,20 @@ function handleMsg(type, m) {
     return;
   }
   if (type === 'bye') {
-    if (!room.partner || room.partner.id !== m.from) return;
-    room.partner.last = 0;
-    rtcReset();
-    if (state === 'play' && inCoop()) toast(partnerName() + ' left the game', meAlive ? 'Keep running, you can still finish this run.' : 'The run is over.', 3000);
+    p.last = 0;
+    rtcReset(p);
+    if (room.host && !(inCoop() && state === 'play')) { room.roster = room.roster.filter(e => e.id !== m.from); sendRoster(); }
+    if (state === 'play' && inCoop()) toast(p.name + ' left the game', meAlive ? 'Keep running, you can still finish this run.' : 'Hold on…', 3000);
     if (current === 'ovRoom') renderRoom();
     if (current === 'ovCoopOver') fillCoopOver();
   }
 }
 function hostStart() {
-  if (!room || !room.host || !NET.ready() || !partnerHere()) return;
+  if (!room || !room.host || !NET.ready() || !peerList().some(peerHere)) return;
+  room.roster = room.roster.filter(e => e.id === NET.id || peerHere(room.peers[e.id]));
+  sendRoster();
   const run = Date.now(), seed = Math.floor(Math.random() * 1e9), t0 = Date.now() + 3600;
-  const msg = { run, seed, t0 };
+  const msg = { run, seed, t0, list: room.roster };
   NET.send('start', msg, true);
   setTimeout(() => NET.send('start', msg, true), 400);
   setTimeout(() => NET.send('start', msg, true), 1000);
@@ -2066,29 +2314,29 @@ function beginCoopRun(seed, t0Host, runId) {
   room.run = runId; room.t0Host = t0Host;
   if (!room.host) room.offApplied = room.offset;
   room.t0Local = t0Host - (room.host ? 0 : room.offApplied);
-  if (!room.role) room.role = 'her';
-  dino.x = dino.tx = slotFor(room.role);
+  dino.x = dino.tx = SLOTS[room.mySlot] || SLOTS[0];
   gt = Math.min(0, (Date.now() - room.t0Local) / 1000);
   bestAnnounced = true;
-  if (room.partner) Object.assign(room.partner, { alive: true, lives: 3, rv: 0, rs: 0, dyShown: 0, snapGt: -1e9, lastJumpGt: -99, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0 } });
+  for (const p of peerList()) Object.assign(p, { alive: true, lives: 3, rv: 0, rs: 0, handled: 0, score: 0, dyShown: 0, snapGt: -1e9, lastJumpGt: -99, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0, climb: null } });
   state = 'play'; show(null);
   daily.c.runsDay++; progress('runsDay', daily.c.runsDay); saveDaily();
   const bonus = touchStreak();
   if (bonus) toast('Daily love bonus · +' + bonus + ' ♥', '🔥 ' + plural(streak.count, 'day') + ' streak. Come back tomorrow to grow it.', 3400);
-  else toast('Run together', 'Jump at the same moment for a bonus. If one of you falls, catch 3 hearts or reach the next level.', 3600);
+  else toast('Run together · ' + plural(peerList().length + 1, 'runner'), 'Jump at the same moment for a bonus. Catch 3 hearts to bring a fallen friend back.', 3600);
 }
 function goDown(stepped) {
-  meAlive = false; combo = 0; mult = 1; inv = 0; shieldOn = false; magnetT = 0; doubleT = 0;
+  meAlive = false; combo = 0; mult = 1; inv = 0; shieldOn = false; magnetT = 0; doubleT = 0; dino.climb = null;
   sfx.over(); buzz([60, 40, 120]);
-  toast(stepped ? 'You left the game, so you went down' : 'You\'re down!', partnerInRun() && room.partner.alive ? partnerName() + ' can bring you back with 3 hearts, or at the next level gate.' : 'Hold on…', 3400);
+  const anyone = peersInRun().some(p => p.alive);
+  toast(stepped ? 'You left the game, so you went down' : 'You\'re down!', anyone ? 'A friend can bring you back with 3 hearts, or at the next level gate.' : 'Hold on…', 3400);
   sendState('down');
 }
-function reviveMe(checkpoint) {
+function reviveMe(checkpoint, by) {
   meAlive = true; lives = 1; inv = 2.5;
-  dino.dy = 150; dino.vy = 0; dino.ground = false; dino.respawnT = 0.9;
+  dino.dy = 150; dino.vy = 0; dino.ground = false; dino.respawnT = 0.9; dino.climb = null;
   sfx.revive(); buzz([40, 30, 40]);
   burstHearts(dino.x + 30, GROUND - 160, REDUCED ? 6 : 18);
-  if (!checkpoint) toast(partnerName() + ' brought you back to life!', 'One life left. Make it count, my love.', 3000);
+  if (!checkpoint) toast((by || 'Your love') + ' brought you back to life!', 'One life left. Make it count.', 3000);
   sendState('revive');
 }
 function coopTick(dt) {
@@ -2108,65 +2356,80 @@ function coopTick(dt) {
     let n = 0;
     while (gt < target - 0.0005 && n < 60 && state === 'play') { stepWorld(Math.min(1 / 60, target - gt)); n++; }
   }
-  const p = room.partner;
-  if (p && p.body) {
+  for (const p of peerList()) {
     const d = p.body.dy - p.dyShown;
     p.dyShown += d * Math.min(1, dt * (Math.abs(d) > 70 ? 20 : 30));
   }
   if (state !== 'play') return;
-  const partnerAlive = partnerInRun() && p.alive;
-  if (gt > 0 && !meAlive && !partnerAlive) { coopEndT += dt; if (coopEndT > 1.4) coopOver(); }
+  const anyAlive = peersInRun().some(p => p.alive);
+  if (gt > 0 && !meAlive && !anyAlive) { coopEndT += dt; if (coopEndT > 1.4) coopOver(); }
   else coopEndT = 0;
 }
 function coopOver() {
   state = 'over';
   played = true; store.set('played', true);
   saveFarthest(); saveCoins(); saveDaily();
-  const me = Math.floor(score), pp = room.partner && room.partner.run === room.run ? room.partner.score : 0;
-  const wins = store.get('coopWins', { me: 0, them: 0 });
-  if (me > pp) wins.me++; else if (pp > me) wins.them++;
-  store.set('coopWins', wins);
+  const me = Math.floor(score);
+  const top = Math.max(0, ...peerList().filter(p => p.run === room.run).map(p => p.score));
+  const wins = store.get('coopWins2', { won: 0, runs: 0 });
+  wins.runs++; if (me > top) wins.won++;
+  store.set('coopWins2', wins);
   fillCoopOver(true);
   show('ovCoopOver');
 }
 function fillCoopOver(fresh) {
   if (!room) return;
-  const me = Math.floor(score), pp = room.partner && room.partner.run === room.run ? room.partner.score : 0;
-  const team = Math.max(me, pp);
+  const rows = [{ id: NET.id, name: myName, char: myChar, outfit, score: Math.floor(score), me: true }]
+    .concat(peerList().filter(p => p.run === room.run).map(p => ({ id: p.id, name: p.name, char: p.char, outfit: p.outfit, score: p.score, me: false })));
+  rows.sort((a, b) => b.score - a.score);
+  const team = rows.reduce((s, r) => s + r.score, 0);
   if (fresh) {
     const tb = store.get('coopBest', 0);
     $('coNew').hidden = !(team > tb);
     if (team > tb) store.set('coopBest', team);
-    $('coEyebrow').textContent = me > pp ? 'You win this run 👑' : pp > me ? partnerName() + ' wins this run 👑' : 'A perfect tie';
-    const titles = ['We will get them next time', 'Down together, up together', 'One more run, my love?'];
-    $('coTitle').textContent = reachedToday ? 'You ran into your future together' : titles[Math.floor(Math.random() * titles.length)];
+    const win = rows[0];
+    $('coEyebrow').textContent = rows.length > 1 && rows[0].score === rows[1].score ? 'A perfect tie at the top' : (win.me ? 'You win this run 👑' : win.name + ' wins this run 👑');
+    const titles = ['We will get them next time', 'Down together, up together', 'One more run, everyone?'];
+    $('coTitle').textContent = reachedToday ? 'You ran into the future together' : titles[Math.floor(Math.random() * titles.length)];
   }
-  $('coMe').textContent = me;
-  $('coPartLbl').textContent = partnerName();
-  $('coPart').textContent = pp;
-  const wins = store.get('coopWins', { me: 0, them: 0 });
+  const ol = $('coRank'); ol.innerHTML = '';
+  rows.forEach((r, i) => {
+    const li = el('li', (r.me ? 'me' : '') + (i === 0 ? ' lead' : ''));
+    li.appendChild(previewCanvas(r.char));
+    li.appendChild(el('span', '', (i === 0 ? '👑 ' : '') + r.name + (r.me ? ' (you)' : '')));
+    li.appendChild(el('span', 'sc', String(r.score)));
+    ol.appendChild(li);
+  });
+  const wins = store.get('coopWins2', { won: 0, runs: 0 });
   const chips = $('coChips'); chips.innerHTML = '';
   chips.appendChild(chip('Level ' + (curLevel + 1), 'ok'));
-  chips.appendChild(chip('Wins: you ' + wins.me + ' · ' + partnerName() + ' ' + wins.them, 'hot'));
+  chips.appendChild(chip('Team score: ' + team, 'hot'));
+  chips.appendChild(chip('You won ' + wins.won + ' of ' + plural(wins.runs, 'run')));
   chips.appendChild(chip(plural(syncJumps, 'in-sync jump')));
   chips.appendChild(chip(plural(revivesGiven, 'revive') + ' by you'));
+  chips.appendChild(chip(plural(climbs, 'climb')));
   chips.appendChild(chip('+' + run.coins + ' ♥ earned'));
-  chips.appendChild(chip('Team best: ' + store.get('coopBest', 0)));
-  $('coReach').textContent = 'Together you ran to ' + fmt(addDays(START, team)) + '.';
-  const here = partnerHere();
+  $('coReach').textContent = 'Team best: ' + store.get('coopBest', 0) + '. You ran to ' + fmt(addDays(START, Math.floor(score))) + '.';
+  const here = peerList().some(peerHere);
   $('btnCoopAgain').hidden = !room.host;
   $('btnCoopAgain').disabled = !here;
   $('coWait').hidden = room.host && here;
-  $('coWait').textContent = !here
-    ? partnerName() + ' has left the room.'
-    : 'Waiting for ' + partnerName() + ' to start the next run…';
+  $('coWait').textContent = !here ? 'Everyone else has left the room.' : 'Waiting for the host to start the next run…';
 }
 setInterval(() => { if (inCoop() && state === 'play') sendState(''); }, 66);
 setInterval(() => {
   if (!room) return;
   sendHi();
-  if (!room.host && room.partner && !room.syncing) NET.send('ping', { t: Date.now() });
-  if (room.host && partnerHere() && !RTC.open && RTC.tries < 4 && Date.now() - RTC.lastTry > 9000) rtcOffer();
+  if (room.host) {
+    if (!(inCoop() && state === 'play')) {
+      const before = room.roster.length;
+      room.roster = room.roster.filter(e => e.id === NET.id || !room.peers[e.id] || Date.now() - room.peers[e.id].last < 8000);
+      if (room.roster.length !== before) applyRoster(room.roster);
+    }
+    sendRoster();
+  }
+  if (!room.host && room.hostId && !room.syncing) NET.send('ping', { t: Date.now(), to: room.hostId });
+  for (const p of peerList()) if (peerHere(p) && !p.rtc.open && p.rtc.tries < 4 && Date.now() - p.rtc.lastTry > 9000 && NET.id < p.id) rtcOffer(p);
   if (current === 'ovRoom') renderRoom();
   if (current === 'ovCoopOver') fillCoopOver(false);
 }, 1000);
@@ -2190,15 +2453,11 @@ function nameTag(text, x, y) {
 function miniHearts(cx, y, filled) {
   for (let i = 0; i < 3; i++) ctx.drawImage(i < filled ? HEART : HEART_GRAY, Math.round(cx - 33 + i * 23), Math.round(y), 20, 18);
 }
-function runnerImg(role, pose, outfitId) {
-  if (role === 'her') return girlSet(outfitId)[pose] || girlSet(outfitId).stand;
-  return pose === 'a' || pose === 'jump' ? VIKI.walk : VIKI.stand;
-}
-function drawRunner(role, x, dy, pose, outfitId, alpha, faceLeft) {
-  const img = runnerImg(role, pose, outfitId);
+function drawRunner(char, x, dy, pose, outfitId, alpha, faceLeft) {
+  const img = runnerImg(char, pose, outfitId);
   const top = Math.round(GROUND - 75 - dy);
   ctx.globalAlpha = alpha;
-  if (role === 'purest' && !faceLeft) { ctx.save(); ctx.translate(Math.round(x) + img.width, top); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0); ctx.restore(); }
+  if (char === 'purest' && !faceLeft) { ctx.save(); ctx.translate(Math.round(x) + img.width, top); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0); ctx.restore(); }
   else ctx.drawImage(img, Math.round(x), top);
   ctx.globalAlpha = 1;
   return top;
@@ -2217,14 +2476,14 @@ function bubble(x, dy) {
   ctx.lineWidth = 3;
   ctx.beginPath(); ctx.arc(x + 33, GROUND - 75 - dy + 40, 44, 0, Math.PI * 2); ctx.stroke();
 }
-function drawWeather(theme, alpha, n) {
+function drawWeather(theme, alpha) {
   if (alpha <= 0.02 || REDUCED) return;
   ctx.globalAlpha = alpha;
   if (theme === 1) {
     ctx.fillStyle = 'rgba(225,240,255,0.55)';
     for (let i = 0; i < 46; i++) {
       const x = ((i * 97 - clock * 160) % (W + 80) + W + 80) % (W + 80) - 40;
-      const y = ((i * 53 + clock * 560) % (GROUND + 60)) - 30;
+      const y = ((i * 53 + clock * 560) % (H + 60)) - 30;
       ctx.fillRect(Math.round(x), Math.round(y), 2, 12);
     }
   } else if (theme === 3) {
@@ -2238,11 +2497,11 @@ function drawWeather(theme, alpha, n) {
   }
   ctx.globalAlpha = 1;
 }
-function drawLanterns(alpha) {
+function drawLanterns(alpha, off) {
   if (alpha <= 0.02) return;
   for (let i = 0; i < 7; i++) {
     const x = ((i * 173 - clock * 14) % (W + 80) + W + 80) % (W + 80) - 40;
-    const y = 50 + (i * 61) % Math.max(60, GROUND - 230) + Math.sin(clock * 1.3 + i) * 6;
+    const y = 50 + (i * 61) % Math.max(60, GROUND - 230) + Math.sin(clock * 1.3 + i) * 6 + off;
     ctx.globalAlpha = alpha * 0.3; ctx.fillStyle = '#ffd166'; pixelDisc(x + 6, y + 9, 15);
     ctx.globalAlpha = alpha;
     ctx.fillStyle = '#ff7a3d'; ctx.fillRect(Math.round(x), Math.round(y), 12, 18);
@@ -2250,6 +2509,56 @@ function drawLanterns(alpha) {
     ctx.fillStyle = '#7a2e12'; ctx.fillRect(Math.round(x) + 3, Math.round(y) - 3, 6, 3); ctx.fillRect(Math.round(x) + 3, Math.round(y) + 18, 6, 3);
   }
   ctx.globalAlpha = 1;
+}
+function drawPlat(p, pal) {
+  const h = platH(p, gt);
+  const x = Math.round(p.wx - dist), y = Math.round(GROUND - h), w = Math.round(p.w);
+  if (x > W + 10 || x + w < -10) return;
+  if (p.sky) {
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fillRect(x, y, w, 12); ctx.fillRect(x + 6, y - 6, w - 12, 6); ctx.fillRect(x + 12, y + 12, w - 24, 6);
+    ctx.fillStyle = 'rgba(200,190,240,0.7)'; ctx.fillRect(x + 12, y + 15, w - 24, 3);
+    return;
+  }
+  if (p.roof) {
+    ctx.fillStyle = 'rgba(40,20,40,0.22)';
+    ctx.fillRect(x + 12, y + 21, 9, h - 21); ctx.fillRect(x + w - 21, y + 21, 9, h - 21);
+    ctx.fillStyle = pal.plat; ctx.fillRect(x, y, w, 21);
+    ctx.fillStyle = pal.platTop; ctx.fillRect(x, y, w, 5);
+    ctx.fillStyle = 'rgba(0,0,0,0.16)';
+    for (let tx = x + 12; tx < x + w - 3; tx += 24) ctx.fillRect(tx, y + 5, 3, 16);
+    ctx.fillRect(x, y + 18, w, 3);
+    return;
+  }
+  if (p.lift) {
+    ctx.fillStyle = 'rgba(80,60,100,0.35)';
+    ctx.fillRect(x + Math.round(w / 2) - 1, Math.round(GROUND - p.lift.base - p.lift.amp * 2 - 60), 3, Math.max(0, y - (GROUND - p.lift.base - p.lift.amp * 2 - 60)));
+  }
+  ctx.fillStyle = 'rgba(60,20,50,0.12)'; ctx.fillRect(x + 6, GROUND + 3, w - 12, 3);
+  ctx.fillStyle = pal.plat; ctx.fillRect(x, y, w, 15);
+  ctx.fillStyle = pal.platTop; ctx.fillRect(x, y, w, 4);
+  ctx.fillStyle = 'rgba(0,0,0,0.18)';
+  for (let tx = x + 18; tx < x + w - 3; tx += 18) ctx.fillRect(tx, y + 4, 3, 11);
+  ctx.fillRect(x, y + 12, w, 3);
+}
+function drawLadder(l, pal) {
+  const x = Math.round(l.wx - dist), top = Math.round(GROUND - l.h);
+  if (x > W + 10 || x + l.w < -10) return;
+  ctx.fillStyle = '#8a5a34';
+  ctx.fillRect(x + 6, top, 6, l.h); ctx.fillRect(x + l.w - 12, top, 6, l.h);
+  ctx.fillStyle = '#c48a54';
+  for (let y = top + 12; y < GROUND - 4; y += 21) ctx.fillRect(x + 6, y, l.w - 12, 5);
+  ctx.fillStyle = '#ffd35c';
+  if (Math.sin(clock * 6) > 0) { ctx.fillRect(x + l.w / 2 - 6, top - 18, 12, 6); ctx.fillRect(x + l.w / 2 - 3, top - 24, 6, 6); }
+}
+function drawSign(s) {
+  const x = Math.round(s.wx - dist);
+  if (x > W + 10 || x < -200) return;
+  ctx.font = '8px "Press Start 2P", monospace'; ctx.textAlign = 'center';
+  const w = ctx.measureText(s.text).width + 14;
+  ctx.fillStyle = '#7a4a2a'; ctx.fillRect(x + w / 2 - 3, GROUND - 40, 6, 40);
+  ctx.fillStyle = '#c48a54'; ctx.fillRect(x, GROUND - 62, w, 22);
+  ctx.fillStyle = '#4a2a14'; ctx.fillText(s.text, x + w / 2, GROUND - 47);
 }
 let lastHeaderN = -1;
 function draw() {
@@ -2262,21 +2571,23 @@ function draw() {
   }
   ctx.save();
   if (shake > 0) ctx.translate((Math.random() - 0.5) * 7, (Math.random() - 0.5) * 7);
+  const cy = Math.round(camY);
 
-  const g = ctx.createLinearGradient(0, 0, 0, GROUND);
+  const g = ctx.createLinearGradient(0, 0, 0, GROUND + cy);
   g.addColorStop(0, pal.skyTop); g.addColorStop(1, pal.skyBot);
-  ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, GROUND + 12);
+  ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, H + 20);
 
   const starA = Math.max(n, themeTo === 4 ? themeK * 0.9 : 0);
   if (starA > 0.03) {
+    const so = Math.round(cy * 0.25);
     for (const s of stars) {
       const a = starA * (0.55 + 0.45 * Math.sin(clock * 2 + s.ph));
       ctx.fillStyle = 'rgba(255,240,250,' + a.toFixed(3) + ')';
-      if (s.big) { ctx.fillRect(s.x - 3, s.y, 9, 3); ctx.fillRect(s.x, s.y - 3, 3, 9); }
-      else ctx.fillRect(s.x, s.y, 3, 3);
+      if (s.big) { ctx.fillRect(s.x - 3, s.y + so, 9, 3); ctx.fillRect(s.x, s.y - 3 + so, 3, 9); }
+      else ctx.fillRect(s.x, s.y + so, 3, 3);
     }
   }
-  const orbX = W * 0.74, orbY = Math.max(70, GROUND * 0.38);
+  const orbX = W * 0.74, orbY = Math.max(70, GROUND * 0.38) + cy * 0.25;
   const moonA = Math.max(n, themeTo === 4 ? themeK : 0);
   if (moonA < 0.97) {
     ctx.globalAlpha = (1 - moonA) * 0.3; ctx.fillStyle = '#ffb38a'; pixelDisc(orbX, orbY, 45);
@@ -2289,11 +2600,13 @@ function draw() {
     ctx.fillStyle = '#e8dcc0'; ctx.fillRect(orbX - 9, orbY - 6, 6, 6); ctx.fillRect(orbX + 6, orbY + 3, 9, 6); ctx.fillRect(orbX - 3, orbY + 12, 3, 3);
     ctx.globalAlpha = 1;
   }
-  if (themeTo === 2) drawLanterns(themeK);
+  if (themeTo === 2) drawLanterns(themeK, cy * 0.3);
   ctx.globalAlpha = 0.85 - n * 0.62;
-  for (const c of bgClouds) ctx.drawImage(PUFF, Math.round(c.x), Math.round(c.y), PUFF.width * c.s, PUFF.height * c.s);
+  for (const c of bgClouds) ctx.drawImage(PUFF, Math.round(c.x), Math.round(c.y + cy * 0.4), PUFF.width * c.s, PUFF.height * c.s);
   ctx.globalAlpha = 1;
 
+  ctx.save();
+  ctx.translate(0, cy);
   ctx.fillStyle = pal.hillFar;
   const o1 = dist * 0.16;
   for (let x = 0; x < W + 6; x += 6) {
@@ -2342,15 +2655,15 @@ function draw() {
     ctx.fillText('LEVEL ' + (gte.lvl + 1), x + 60, GROUND - 168);
     ctx.fillStyle = '#ffd35c'; ctx.fillRect(x + 3, GROUND - 198, 3, 12); ctx.fillRect(x + 6, GROUND - 198, 9, 6);
   }
-  for (const p of plats) {
-    const x = Math.round(p.wx - dist), y = Math.round(GROUND - p.h), w = Math.round(p.w);
-    if (x > W + 10 || x + w < -10) continue;
-    ctx.fillStyle = 'rgba(60,20,50,0.12)'; ctx.fillRect(x + 6, GROUND + 3, w - 12, 3);
-    ctx.fillStyle = pal.plat; ctx.fillRect(x, y, w, 15);
-    ctx.fillStyle = pal.platTop; ctx.fillRect(x, y, w, 4);
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    for (let tx = x + 18; tx < x + w - 3; tx += 18) ctx.fillRect(tx, y + 4, 3, 11);
-    ctx.fillRect(x, y + 12, w, 3);
+  for (const s of signs) drawSign(s);
+  for (const p of plats) drawPlat(p, pal);
+  for (const l of ladders) drawLadder(l, pal);
+  for (const sp of springs) {
+    const x = Math.round(sp.wx - dist);
+    if (x > W + 10 || x < -60) continue;
+    const squashed = sp.boing && clock - sp.boing < 0.15;
+    const img = SPRING[squashed ? 1 : 0];
+    ctx.drawImage(img, x, Math.round(GROUND - sp.h - img.height + 3));
   }
 
   for (const h of hearts) {
@@ -2395,12 +2708,12 @@ function draw() {
   }
 
   const coop = inCoop();
-  const partner = coop && room.partner && room.partner.run === room.run ? room.partner : null;
-  const shadowAt = (x, dy) => { if (dy < -2) return; const w = Math.max(16, 40 - dy * 0.15); ctx.fillRect(Math.round(x + 30 - w / 2), GROUND + 3, Math.round(w), 3); };
+  const others = coop ? peerList().filter(p => p.run === room.run) : [];
+  const shadowAt = (x, dy) => { if (dy < -2 || dy > 6) return; ctx.fillRect(Math.round(x + 10), GROUND + 3, 40, 3); };
   ctx.fillStyle = 'rgba(80,20,60,0.16)';
   shadowAt(dino.x, dino.dy);
   if (viki.mode !== 'off') shadowAt(viki.x, viki.dy);
-  if (partner && partner.alive) shadowAt(slotFor(partner.role), partner.dyShown);
+  for (const p of others) if (p.alive) shadowAt(p.x, p.dyShown);
   if (n > 0.35 || themeTo === 4) { ctx.shadowColor = 'rgba(255,214,236,0.85)'; ctx.shadowBlur = 9 * Math.max(n, themeTo === 4 ? 0.8 : 0) * S * DPR; }
 
   let vtop = 0;
@@ -2409,26 +2722,26 @@ function draw() {
     const pose = moving && (viki.dy > 0 || (viki.mode === 'enter' ? Math.floor(viki.anim) % 2 : Math.floor(dist / 28) % 2)) ? 'a' : 'stand';
     vtop = drawRunner('purest', viki.x, viki.dy, pose, null, 1, viki.mode !== 'run');
   }
-  let ptop = 0;
-  if (partner) {
-    const ghost = !partner.alive, gone = !partnerHere(), pb = partner.body || { ground: true };
-    const pose = ghost ? 'stand' : !pb.ground ? 'jump' : state === 'play' && gt > 0 ? (Math.floor(dist / 28) % 2 ? 'a' : 'b') : 'stand';
-    const alpha = gone ? 0.25 : ghost ? 0.4 : (partner.inv && Math.floor(clock * 10) % 2 === 0 ? 0.35 : 1);
-    const pdy = ghost ? 150 + Math.sin(clock * 3 + 1) * 6 : partner.dyShown;
-    ptop = drawRunner(partner.role, slotFor(partner.role), pdy, pose, partner.outfit, alpha, false);
-    if (!ghost && pb.respawnT > 0) bubble(slotFor(partner.role), pdy);
+  const tops = {};
+  for (const p of others) {
+    const ghost = !p.alive, gone = !peerHere(p), pb = p.body;
+    const pose = ghost ? 'stand' : (pb.climb || !pb.ground) ? 'jump' : state === 'play' && gt > 0 ? (Math.floor(dist / 28) % 2 ? 'a' : 'b') : 'stand';
+    const alpha = gone ? 0.25 : ghost ? 0.4 : (p.inv && Math.floor(clock * 10) % 2 === 0 ? 0.35 : 1);
+    const pdy = ghost ? 150 + Math.sin(clock * 3 + p.slot) * 6 : p.dyShown;
+    tops[p.id] = drawRunner(p.char, p.x, pdy, pose, p.outfit, alpha, false);
+    if (!ghost && pb.respawnT > 0) bubble(p.x, pdy);
   }
-  const myRoleNow = coop ? room.role : 'her';
+  const myChar0 = coop ? myChar : 'sunshine';
   let myPose = 'stand';
   if (state === 'dying' || (state === 'over' && !coop)) myPose = 'hurt';
-  else if (!dino.ground) myPose = 'jump';
+  else if (!dino.ground || dino.climb) myPose = 'jump';
   else if (state === 'play' && meAlive && !(coop && gt <= 0)) myPose = Math.floor(dist / 28) % 2 ? 'a' : 'b';
   const ghostMe = coop && !meAlive;
   let myAlpha = 1;
   if (ghostMe) myAlpha = 0.4;
   else if (inv > 0 && state === 'play' && Math.floor(inv * 10) % 2 === 0) myAlpha = 0.35;
   const myDy = ghostMe ? 150 + Math.sin(clock * 3) * 6 : dino.dy;
-  const mytop = drawRunner(myRoleNow, dino.x, myDy, myPose, outfit, myAlpha, false);
+  const mytop = drawRunner(myChar0, dino.x, myDy, myPose, outfit, myAlpha, false);
   ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
   if (!ghostMe && dino.respawnT > 0) bubble(dino.x, dino.dy);
 
@@ -2444,22 +2757,31 @@ function draw() {
   if (viki.mode === 'meet' || viki.mode === 'enter' || (viki.mode === 'run' && tagT > 0)) nameTag('Purest', viki.x + 30, vtop - 6);
   if (viki.mode === 'meet') {
     const a = Math.min(1, meetT * 3), s = 1.4 + Math.min(1, meetT * 2) * 0.8;
-    const cx = (dino.x + viki.x) / 2 + 30, cy = GROUND - 75 - 40 + Math.sin(clock * 3) * 4;
+    const hx = (dino.x + viki.x) / 2 + 30, hy = GROUND - 75 - 40 + Math.sin(clock * 3) * 4;
     ctx.globalAlpha = a;
-    ctx.drawImage(HEART, Math.round(cx - HEART.width * s / 2), Math.round(cy - HEART.height * s / 2), Math.round(HEART.width * s), Math.round(HEART.height * s));
+    ctx.drawImage(HEART, Math.round(hx - HEART.width * s / 2), Math.round(hy - HEART.height * s / 2), Math.round(HEART.width * s), Math.round(HEART.height * s));
     ctx.globalAlpha = 1;
   }
-  if (partner) {
-    const px = slotFor(partner.role) + 30;
-    nameTag(TAGS[partner.role] + (partnerHere() ? '' : ' (offline)'), px, ptop - 6);
-    if (!partner.alive) miniHearts(px, ptop - 44, rv);
+  let leader = null;
+  if (coop && state === 'play' && gt > 0) {
     const me = Math.floor(score);
-    if (state === 'play' && gt > 0 && me !== partner.score && partnerHere()) {
-      const leaderX = me > partner.score ? dino.x + 30 : px, leaderTop = me > partner.score ? mytop - (ghostMe ? 6 : 0) : ptop - 22;
-      ctx.drawImage(CROWN, Math.round(leaderX - CROWN.width / 2), Math.round(leaderTop - CROWN.height - (me > partner.score ? 4 : 0)));
-    }
+    let topScore = me, tie = false;
+    leader = 'me';
+    for (const p of others) { if (!peerHere(p)) continue; if (p.score > topScore) { topScore = p.score; leader = p.id; tie = false; } else if (p.score === topScore) tie = true; }
+    if (tie || others.length === 0) leader = null;
   }
-  if (ghostMe && partner) miniHearts(dino.x + 30, mytop - 26, partner.rv);
+  for (const p of others) {
+    const px = p.x + 30, pt = tops[p.id];
+    nameTag(p.name + (peerHere(p) ? '' : ' (offline)'), px, pt - 6);
+    if (!p.alive && rvTarget === p.id) miniHearts(px, pt - 44, rv);
+    if (leader === p.id) ctx.drawImage(CROWN, Math.round(px - CROWN.width / 2), Math.round(pt - 24 - CROWN.height));
+  }
+  if (leader === 'me') ctx.drawImage(CROWN, Math.round(dino.x + 30 - CROWN.width / 2), Math.round(mytop - CROWN.height - 4));
+  if (ghostMe) {
+    let best = 0;
+    for (const p of others) if (p.alive && p.rv > best) best = p.rv;
+    miniHearts(dino.x + 30, mytop - 26, best);
+  }
 
   for (const p of parts) {
     const a = Math.max(0, 1 - p.age / p.life);
@@ -2469,7 +2791,6 @@ function draw() {
     else { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); }
   }
   ctx.globalAlpha = 1;
-  drawWeather(themeTo, themeK, n);
   ctx.textAlign = 'center';
   ctx.font = '10px "Press Start 2P", monospace';
   for (const f of floats) {
@@ -2479,26 +2800,34 @@ function draw() {
     ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
+  ctx.restore();
 
+  drawWeather(themeTo, themeK);
   drawHud(pal);
-  drawJourney(pal);
+  if (cy < 40) drawJourney(pal, cy);
 
   if (coop && state === 'play') {
-    const by = HUD + 100;
+    for (const p of others) {
+      if (!peerHere(p)) continue;
+      const sy = (p.alive ? GROUND - 75 - p.dyShown : GROUND - 225) + cy;
+      if (sy < HUD + 120) pill('▲ ' + p.name, p.x + 30, HUD + 140, '#7a3cc4');
+    }
+    const by = HUD + 168;
     if (gt <= 0) {
       const c = Math.ceil(-gt);
       ctx.font = '40px "Press Start 2P", monospace'; ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255,250,247,0.95)';
-      ctx.fillText(c > 0 ? String(c) : 'GO!', W / 2 + 3, GROUND - 150 + 3);
+      ctx.fillText(c > 0 ? String(c) : 'GO!', W / 2 + 3, GROUND - 200 + 3);
       ctx.fillStyle = '#c42e68';
-      ctx.fillText(c > 0 ? String(c) : 'GO!', W / 2, GROUND - 150);
-      pill('Get ready to run together', W / 2, GROUND - 110);
+      ctx.fillText(c > 0 ? String(c) : 'GO!', W / 2, GROUND - 200);
+      pill('Get ready to run together', W / 2, GROUND - 160);
     } else if (gt < 0.6) {
       ctx.font = '40px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#c42e68';
-      ctx.fillText('GO!', W / 2, GROUND - 150);
+      ctx.fillText('GO!', W / 2, GROUND - 200 + cy);
     }
-    if (gt > 0 && !meAlive && partner && partner.alive) pill('You\'re down · ' + partnerName() + ' needs ' + (3 - partner.rv) + ' more ♥', W / 2, by, '#7a3cc4');
-    else if (gt > 0 && meAlive && partner && !partner.alive && partnerHere()) pill(partnerName() + ' is down · catch ' + (3 - rv) + ' more ♥', W / 2, by);
+    const tgt = reviveTarget();
+    if (gt > 0 && !meAlive && others.some(p => p.alive && peerHere(p))) pill('You\'re down · a friend can catch 3 ♥ for you', W / 2, by, '#7a3cc4');
+    else if (gt > 0 && tgt) pill(tgt.name + ' is down · catch ' + (3 - (rvTarget === tgt.id ? rv : 0)) + ' more ♥', W / 2, by);
   }
 
   if (flash > 0) { ctx.fillStyle = 'rgba(255,70,120,' + (flash * 0.6).toFixed(3) + ')'; ctx.fillRect(-10, -10, W + 20, H + 20); }
@@ -2539,19 +2868,29 @@ function drawHud(pal) {
   if (state === 'play' && mult > 1) {
     ctx.font = '11px "Press Start 2P", monospace';
     ctx.fillStyle = '#ff3d7f';
-    ctx.fillText('x' + mult + ' COMBO', W - 16, HUD + 44);
+    ctx.fillText('x' + mult + ' COMBO', W - 16, HUD + 42);
   }
-  if (inCoop() && room.partner && room.partner.run === room.run) {
-    const p = room.partner;
-    ctx.textAlign = 'center';
+  if (inCoop()) {
+    const rows = [{ name: 'You', score: Math.floor(score), alive: meAlive, here: true, me: true }]
+      .concat(peerList().filter(p => p.run === room.run).map(p => ({ name: p.name, score: p.score, alive: p.alive, here: peerHere(p) })));
+    rows.sort((a, b) => b.score - a.score);
     ctx.font = '9px "Press Start 2P", monospace';
-    ctx.fillStyle = pal.hud;
-    ctx.fillText(TAGS[p.role] + ' ' + (!partnerHere() ? 'offline' : p.alive ? pad(p.score) : 'down'), W / 2, HUD + 44);
-    for (let i = 0; i < 3; i++) ctx.drawImage(i < p.lives && p.alive ? HEART : HEART_GRAY, Math.round(W / 2 - 25 + i * 17), HUD + 52, 15, 13);
+    rows.forEach((r, i) => {
+      const y = HUD + 62 + i * 16;
+      const label = (r.name.length > 8 ? r.name.slice(0, 8) : r.name) + ' ' + (r.here ? (r.alive ? pad(r.score) : 'DOWN ') : 'OFF  ');
+      const w = ctx.measureText(label).width + 10;
+      ctx.fillStyle = r.me ? 'rgba(255,92,147,0.9)' : 'rgba(255,250,247,0.82)';
+      ctx.fillRect(Math.round(W - 12 - w), y - 11, Math.round(w), 15);
+      ctx.fillStyle = r.me ? '#ffffff' : '#7a2a55';
+      ctx.textAlign = 'right';
+      ctx.fillText(label, W - 17, y);
+      if (i === 0 && rows.length > 1 && rows[0].score > rows[1].score) ctx.drawImage(CROWN, Math.round(W - 16 - w - CROWN.width), y - 13);
+    });
   }
 }
-function drawJourney(pal) {
-  const y = GROUND + 22, x0 = 22, x1 = W - 22, len = x1 - x0;
+function drawJourney(pal, cy) {
+  const y = GROUND + 22 + cy, x0 = 22, x1 = W - 22, len = x1 - x0;
+  if (y > H - 10) return;
   const p = Math.min(1, score / TOTAL_DAYS);
   ctx.globalAlpha = 0.3; ctx.fillStyle = pal.line; ctx.fillRect(x0, y, len, 6); ctx.globalAlpha = 1;
   if (farthest > 0 && state !== 'play') {
@@ -2578,7 +2917,7 @@ function frame(now) {
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
   last = now;
   tick(dt);
-  if (window.__rtyTrace && inCoop() && gt > 0) window.__rtyTrace.push([gt, dino.dy, room.partner ? room.partner.dyShown : null, Date.now()]);
+  if (window.__rtyTrace && inCoop() && gt > 0) { const p = peerList()[0]; window.__rtyTrace.push([gt, dino.dy, p ? p.dyShown : null, Date.now()]); }
   draw();
   requestAnimationFrame(frame);
 }
@@ -2586,12 +2925,13 @@ function frame(now) {
 window.__rty = {
   get state() { return state; }, get score() { return score; }, set score(v) { score = v; }, set lives(v) { lives = v; },
   TOTAL_DAYS, MONTHS,
-  info() { return { state, meAlive, lives, rv, gt: Math.round(gt * 100) / 100, dist: Math.round(dist), lv: curLevel, dy: Math.round(dino.dy), role: room && room.role, code: room && room.code, host: room && room.host, synced: room && room.synced, offset: room && Math.round(room.offset), offApplied: room && Math.round(room.offApplied), rtt: room && room.rtt, p2p: RTC.open, partner: room && room.partner && { role: room.partner.role, alive: room.partner.alive, rv: room.partner.rv, run: room.partner.run === room.run, here: partnerHere(), dy: Math.round(room.partner.dyShown) } }; },
+  info() { return { state, meAlive, lives, rv, gt: Math.round(gt * 100) / 100, dist: Math.round(dist), lv: curLevel, dy: Math.round(dino.dy), camY: Math.round(camY), climbs, code: room && room.code, host: room && room.host, slot: room && room.mySlot, synced: room && room.synced, offset: room && Math.round(room.offset), roster: room && room.roster.map(e => e.name), peers: peerList().map(p => ({ name: p.name, alive: p.alive, here: peerHere(p), inRun: p.run === (room && room.run), p2p: p.rtc.open, dy: Math.round(p.dyShown) })) }; },
   jumpNow() { jump(); },
   fakeHeart() { collectHeart({ wx: dist + dino.x, yOff: 30, ph: 0, gone: false, gold: false }); },
   down() { lives = 0; goDown(false); },
   give(c) { coins += c; saveCoins(); },
-  warp(t) { if (!inCoop()) { gt = t; dist = distAt(t); genX = Math.max(genX, dist + 200); obstacles = []; hearts = []; plats = []; pits = []; foes = []; lastGateLvl = levelIndexAt(dist); } }
+  warp(t) { if (!inCoop()) { gt = t; dist = distAt(t); genX = Math.max(genX, dist + 200); obstacles = []; hearts = []; plats = []; pits = []; foes = []; ladders = []; springs = []; signs = []; lastGateLvl = levelIndexAt(dist); } },
+  force(seg) { forceSeg = seg; }
 };
 
 paintSound();
@@ -2606,7 +2946,11 @@ if (document.fonts && document.fonts.load) {
 window.addEventListener('pointerdown', () => { if (!muted) audio(); }, { passive: true });
 (() => {
   const h = (location.hash || '').slice(1).toUpperCase();
-  if (/^[A-Z2-9]{4}[0-9]$/.test(h)) { $('joinCode').value = h; openRoom(h, false, null, +h[4]); }
+  if (/^[A-Z2-9]{4}[0-9]$/.test(h)) {
+    $('joinCode').value = h;
+    if (store.get('char', null)) openRoom(h, false, +h[4]);
+    else openCoop();
+  }
 })();
 })();
 </script>
