@@ -215,7 +215,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
     <div class="chips" id="startChips"></div>
     <ul class="how" id="howList">
       <li><span class="ic">↑</span><span>Tap to jump. Hold to jump higher.</span></li>
-      <li><span class="ic">✿</span><span>Hop over the cacti, and don't jump into the grumpy clouds.</span></li>
+      <li><span class="ic">✿</span><span>Hop over cacti and gaps, land on platforms, and stomp the grumpy puffs.</span></li>
       <li><span class="ic">♥</span><span>Catch hearts in a row for combos. Love makes time fly.</span></li>
       <li><span class="ic">✉</span><span id="howLetter">Run all the way to today. Someone is waiting for you there, with a letter.</span></li>
     </ul>
@@ -339,8 +339,10 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
         <li>Catch hearts in a row for a combo, up to x5. Missing one resets it.</li>
         <li>Golden hearts are rare: 50 days and 10 ♥ each.</li>
         <li>Power-ups: Purest's hug saves you from one hit, the love magnet pulls hearts in, and double days doubles every point.</li>
+        <li>Land on floating platforms, leap over gaps, and jump on grumpy puffs to stomp them.</li>
+        <li>Every level gate is a checkpoint: you get a life back, and a downed partner comes back to life.</li>
         <li>Clear a cactus by a whisker for a close-call bonus.</li>
-        <li>Play together on two phones. If one of you goes down, the other catches 3 hearts to bring them back.</li>
+        <li>Play together on two phones. Jump at the same moment for an in-sync bonus. If one of you goes down, the other catches 3 hearts to bring them back. Whoever leads wears the crown.</li>
         <li>Spend ♥ in the wardrobe on new outfits.</li>
       </ul>
     </div>
@@ -478,7 +480,9 @@ const MT = {
   scoreRun:  { text: n => 'Score ' + n + ' in one run', tiers: [250, 500, 850] },
   runsDay:   { text: n => 'Play ' + n + ' runs today', tiers: [3, 4, 5] },
   cloudsRun: { text: n => 'Run under ' + n + ' grumpy clouds in one run', tiers: [3, 6, 9] },
-  golden:    { text: n => n === 1 ? 'Catch a golden heart' : 'Catch ' + n + ' golden hearts today', tiers: [1, 1, 2] }
+  golden:    { text: n => n === 1 ? 'Catch a golden heart' : 'Catch ' + n + ' golden hearts today', tiers: [1, 1, 2] },
+  levelRun:  { text: n => 'Reach level ' + n + ' in one run', tiers: [2, 3, 4] },
+  stompRun:  { text: n => 'Stomp ' + n + ' grumpy puffs in one run', tiers: [2, 4, 6] }
 };
 const MISSION_REWARD = 50, ALL_REWARD = 100;
 function newDaily(key) {
@@ -790,22 +794,35 @@ function buildScenery() {
   for (let i = 0; i < 7; i++) groundBits.push({ x: Math.random() * TILE, flower: true, c: Math.random() < 0.5 ? '#ff6fa3' : '#ffd35c' });
 }
 
-/* ---------------- Day / night palette ---------------- */
+/* ---------------- Level themes, day / night palette ---------------- */
 const hex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
-const DAYP = { skyTop: '#ffc4dc', skyBot: '#fff1e6', hillFar: '#ffd5e4', hillNear: '#ffbcd3', ground: '#fde4ec', line: '#b45a86', hud: '#8b2d5e' };
-const NIGHTP = { skyTop: '#130c32', skyBot: '#4c2b70', hillFar: '#2c1e58', hillNear: '#3b2769', ground: '#22183f', line: '#e9a8d4', hud: '#ffdcee' };
-const DAYC = {}, NIGHTC = {};
-for (const k in DAYP) { DAYC[k] = hex(DAYP[k]); NIGHTC[k] = hex(NIGHTP[k]); }
+const THEMES = [
+  { skyTop: '#ffc4dc', skyBot: '#fff1e6', hillFar: '#ffd5e4', hillNear: '#ffbcd3', ground: '#fde4ec', line: '#b45a86', hud: '#8b2d5e', plat: '#d9668f', platTop: '#ffb3cc' },
+  { skyTop: '#8fb8d0', skyBot: '#dfeef2', hillFar: '#b2d0d4', hillNear: '#86b6ae', ground: '#e4eee4', line: '#4b7a72', hud: '#24465a', plat: '#a8534a', platTop: '#d8876a' },
+  { skyTop: '#ff9466', skyBot: '#ffe0b0', hillFar: '#f2ae7a', hillNear: '#e08656', ground: '#fde4c8', line: '#9e4a2a', hud: '#5e2410', plat: '#7f5236', platTop: '#c98d58' },
+  { skyTop: '#b5d2f3', skyBot: '#f2f7ff', hillFar: '#d6e5f5', hillNear: '#bcd1ea', ground: '#f7fbff', line: '#6783a6', hud: '#2c4464', plat: '#86b2db', platTop: '#eaf5ff' },
+  { skyTop: '#2f2370', skyBot: '#9a72d0', hillFar: '#55419a', hillNear: '#443488', ground: '#2c2460', line: '#d6b6ff', hud: '#f3e8ff', plat: '#e9d8ff', platTop: '#ffffff' }
+];
+const NIGHTP = { skyTop: '#130c32', skyBot: '#4c2b70', hillFar: '#2c1e58', hillNear: '#3b2769', ground: '#22183f', line: '#e9a8d4', hud: '#ffdcee', plat: '#6b4fa8', platTop: '#b79cff' };
+const THEMEC = THEMES.map(t => { const o = {}; for (const k in t) o[k] = hex(t[k]); return o; });
+const NIGHTC = {};
+for (const k in NIGHTP) NIGHTC[k] = hex(NIGHTP[k]);
+let themeFrom = THEMEC[0], themeTo = 0, themeK = 1;
+function themeMix() {
+  const o = {}, to = THEMEC[themeTo], k = Math.min(1, themeK);
+  for (const key in to) o[key] = themeFrom[key].map((v, i) => v + (to[key][i] - v) * k);
+  return o;
+}
 function palette(n) {
-  const o = {};
-  for (const k in DAYC) {
-    const a = DAYC[k], b = NIGHTC[k];
+  const base = themeMix(), o = {};
+  for (const k in base) {
+    const a = base[k], b = NIGHTC[k];
     o[k] = 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * n) + ',' + Math.round(a[1] + (b[1] - a[1]) * n) + ',' + Math.round(a[2] + (b[2] - a[2]) * n) + ')';
   }
   return o;
 }
 const CYCLE = TOTAL_DAYS * 2 / 3;            // so the sky is fully night when she reaches today
-const nightness = () => 0.5 - 0.5 * Math.cos(2 * Math.PI * score / CYCLE);
+const nightness = () => (0.5 - 0.5 * Math.cos(2 * Math.PI * score / CYCLE)) * (themeTo === 4 ? 0.4 : 1);
 
 /* ---------------- Sound ---------------- */
 let actx = null;
@@ -844,7 +861,10 @@ const sfx = {
   revive() { [523, 784, 1046, 1568].forEach((f, i) => tone(f, 0.18, 'triangle', 0.07, i * 0.1)); },
   tick() { tone(660, 0.1, 'square', 0.04); },
   go() { tone(990, 0.25, 'square', 0.05); },
-  over() { [392, 330, 262].forEach((f, i) => tone(f, 0.22, 'triangle', 0.06, i * 0.16)); }
+  over() { [392, 330, 262].forEach((f, i) => tone(f, 0.22, 'triangle', 0.06, i * 0.16)); },
+  level() { [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, 0.14, 'square', 0.04, i * 0.08)); },
+  stomp() { tone(220, 0.12, 'square', 0.06, 0, 520); },
+  sync() { tone(784, 0.1, 'triangle', 0.07); tone(988, 0.1, 'triangle', 0.07, 0.06); tone(1175, 0.16, 'triangle', 0.07, 0.12); }
 };
 function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
 const SOUND_ON = '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 7h3l5-4v14l-5-4H3z"/><path d="M14 6.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -852,24 +872,34 @@ const SOUND_OFF = '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="tru
 function paintSound() { $('btnSound').innerHTML = muted ? SOUND_OFF : SOUND_ON; $('btnSound').setAttribute('aria-label', muted ? 'Turn sound on' : 'Turn sound off'); }
 
 /* ---------------- World motion (a pure function of time, so two phones agree) ---------------- */
-const SPEED0 = 360, ACC = 6, SPEED_MAX = 820, GRAV = 2600, JUMP_V = 900, CUT_V = 520, PTS_DIV = 42;
+const SPEED0 = 340, ACC = 4.5, SPEED_MAX = 720, GRAV = 2600, JUMP_V = 900, CUT_V = 520, PTS_DIV = 42, STOMP_V = 640;
 const T_MAX = (SPEED_MAX - SPEED0) / ACC;
 const D_MAX = SPEED0 * T_MAX + 0.5 * ACC * T_MAX * T_MAX;
 const distAt = t => t <= 0 ? 0 : t <= T_MAX ? SPEED0 * t + 0.5 * ACC * t * t : D_MAX + SPEED_MAX * (t - T_MAX);
 const speedAtTime = t => Math.min(SPEED_MAX, SPEED0 + ACC * Math.max(0, t));
 const speedAtDist = x => x >= D_MAX ? SPEED_MAX : Math.sqrt(SPEED0 * SPEED0 + 2 * ACC * Math.max(0, x));
+const LV_STARTS = [0, 6500, 15000, 26000, 39000];
+const LEVEL_NAMES = ['Meadow of Firsts', 'Monsoon Rooftops', 'Lantern Lanes', 'Winter Hills', 'Starlight Sky'];
+function levelIndexAt(x) {
+  if (x >= 39000) return 4 + Math.floor((x - 39000) / 15000);
+  let i = 0;
+  for (let k = 0; k < LV_STARTS.length; k++) if (x >= LV_STARTS[k]) i = k;
+  return i;
+}
+const levelName = l => LEVEL_NAMES[l % 5];
 
 /* ---------------- Game state ---------------- */
 let state = 'start', score = 0, speed = SPEED0, lives = 3, inv = 0, timer = 0, gt = 0, dist = 0;
-let obstacles = [], hearts = [], pups = [], parts = [], floats = [];
-let genX = 0, crng = Math.random;
+let obstacles = [], hearts = [], pups = [], plats = [], pits = [], foes = [], gates = [], parts = [], floats = [];
+let genX = 0, crng = Math.random, lastGateLvl = 0, foeSeq = 0, curLevel = 0;
 let shake = 0, flash = 0, lastMonth = 0, reachedToday = false, lastHit = 'cactus', idleT = 0, clock = 0;
 let shieldOn = false, magnetT = 0, doubleT = 0, combo = 0, mult = 1, run = null, bestAnnounced = false, tagT = 0, rankStart = 0;
 let meAlive = true, rv = 0, reviveSerial = 0, handledRevive = 0, revivesGiven = 0, reviveWaitUntil = 0, coopEndT = 0, lastCount = 99;
-const dino = { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0 };   // "dino" is the runner on this phone
-const viki = { mode: 'off', x: 0, dy: 0, anim: 0, sp: 300 };            // Purest as the solo-mode companion
+let myLastJumpGt = -99, lastSyncGt = -99, syncJumps = 0;
+const dino = { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0 };   // the runner on this phone
+const viki = { mode: 'off', x: 0, dy: 0, anim: 0, sp: 300 };                          // Purest as the solo-mode companion
 let hist = [], meetT = 0;
-let room = null;                                                          // the co-op room, when playing together
+let room = null;                                                                        // the co-op room, when playing together
 const DBOX = [{ x: 20, y: 8, w: 34, h: 28 }, { x: 24, y: 40, w: 24, h: 20 }, { x: 20, y: 60, w: 26, h: 12 }];
 const multFor = c => c <= 0 ? 1 : Math.min(5, 1 + Math.floor((c - 1) / 3));
 const NAMES = { her: 'Her', purest: 'Purest' };
@@ -879,13 +909,23 @@ const slotFor = role => role === 'purest' ? 30 : 92;
 const partnerName = () => room && room.role ? TAGS[room.role === 'her' ? 'purest' : 'her'] : 'your love';
 const pron = () => room && room.role === 'purest' ? 'her' : 'him';
 
+const FOE_ROWS = [
+  ['...KKKKKK...', '.KKKKKKKKKK.', 'KKEKKKKKKEKK', 'KKKEKKKKEKKK', 'KKKWKKKKWKKK', 'KKKKMMMMKKKK', '.KKKKKKKKKK.', '..FF....FF..'],
+  ['...KKKKKK...', '.KKKKKKKKKK.', 'KKEKKKKKKEKK', 'KKKEKKKKEKKK', 'KKKWKKKKWKKK', 'KKKKMMMMKKKK', '.KKKKKKKKKK.', '...FF..FF...']
+];
+const FOE_PAL = { K: '#8f7cab', E: '#2a1b2e', M: '#2a1b2e', W: '#ffffff', F: '#5a4a70' };
+const FOE = FOE_ROWS.map(r => sprite(r, FOE_PAL, '#3d2f52'));
+const CROWN = sprite(['Y.Y.Y', 'YRYRY', 'YYYYY'], { Y: '#ffc83d', R: '#ff4d7d' }, '#a8740b');
+
 function reset() {
   score = 0; gt = 0; dist = 0; speed = SPEED0; lives = 3; inv = 0; floats = [];
   lastMonth = 0; reachedToday = false; meAlive = true; rv = 0; reviveSerial = 0; handledRevive = 0; revivesGiven = 0; reviveWaitUntil = 0; coopEndT = 0; lastCount = 99;
+  myLastJumpGt = -99; lastSyncGt = -99; syncJumps = 0; curLevel = 0;
+  themeFrom = THEMEC[0]; themeTo = 0; themeK = 1;
   shieldOn = false; magnetT = 0; doubleT = 0; combo = 0; mult = 1; tagT = 0;
-  run = { hearts: 0, cacti: 0, clouds: 0, near: 0, maxMult: 1, coins: 0, golden: 0, power: 0 };
+  run = { hearts: 0, cacti: 0, clouds: 0, near: 0, maxMult: 1, coins: 0, golden: 0, power: 0, stomps: 0 };
   bestAnnounced = best === 0; rankStart = rankOf(best);
-  dino.x = 44; dino.tx = 44; dino.dy = 0; dino.vy = 0; dino.ground = true; dino.buffer = 0;
+  Object.assign(dino, { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0 });
   viki.mode = 'off'; viki.dy = 0; hist = []; meetT = 0;
   resetCourse(Math.floor(Math.random() * 1e9));
 }
@@ -919,45 +959,156 @@ function makeHeart(cx, centerHeight) {
   const gold = crng() < 0.07, ph = crng() * 6;
   return { wx: cx - HEART.width / 2, yOff: centerHeight + HEART.height / 2, ph, gone: false, missed: false, gold };
 }
+function makeFoe(cx, range, h) { return { id: ++foeSeq, wx0: cx - FOE[0].width / 2, range: Math.max(0, range), ph: crng() * 6, h, dead: false }; }
+const foeX = f => f.wx0 + f.range * Math.sin(gt * 1.5 + f.ph);
 function resetCourse(seed) {
   crng = seeded('course-' + seed);
-  genX = 820; obstacles = []; hearts = []; pups = [];
+  genX = 820; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = []; gates = [];
+  lastGateLvl = 0; foeSeq = 0;
+}
+function pickSeg(lvl, days) {
+  const L = Math.min(lvl, 4);
+  const w = {
+    plain: [6, 4, 3, 3, 2][L],
+    cloud: lvl === 0 ? (days > 50 ? 1 : 0) : [1, 2, 1, 2, 2][L],
+    plats: [2, 3, 3, 3, 4][L],
+    pit: [0, 2, 2, 3, 3][L],
+    foe: [0, 0, 2, 2, 3][L]
+  };
+  let total = 0;
+  for (const k in w) total += w[k];
+  let r = crng() * total;
+  for (const k in w) { r -= w[k]; if (r < 0) return k; }
+  return 'plain';
 }
 function generateNext() {
-  const x = genX, v = speedAtDist(x), days = x / PTS_DIV;
-  const r = crng();
-  let o;
-  if (days > 50 && r < 0.2) o = makeCloud();
-  else if (days > 110 && r < 0.36) o = makeCactus('double');
-  else if (r < 0.68) o = makeCactus('small');
-  else o = makeCactus('tall');
-  o.wx = x;
-  obstacles.push(o);
-  const minGap = Math.max(340, v * 0.95);
-  const gap = minGap + crng() * minGap * 0.9;
-  const hi = crng(), lo = crng(), pu = crng(), puType = crng();
-  if (o.kind === 'cactus' && hi < 0.4) hearts.push(makeHeart(x + o.w / 2, 168));
-  if (lo < 0.38) hearts.push(makeHeart(x + o.w + gap * 0.4, 30));
-  if (days > 25 && pu < 0.05) {
+  const x = genX, v = speedAtDist(x), days = x / PTS_DIV, lvl = levelIndexAt(x);
+  if (lvl > lastGateLvl) {
+    lastGateLvl = lvl;
+    gates.push({ wx: x + 80, lvl, passed: false });
+    hearts.push(makeHeart(x + 115, 150));
+    genX = x + 560;
+    return;
+  }
+  const seg = pickSeg(lvl, days);
+  let len = 0;
+  if (seg === 'plain') {
+    const r = crng();
+    const o = (lvl >= 1 || days > 110) && r < 0.25 ? makeCactus('double') : r < 0.62 ? makeCactus('small') : makeCactus('tall');
+    o.wx = x; obstacles.push(o);
+    if (crng() < 0.42) hearts.push(makeHeart(x + o.w / 2, 168));
+    len = o.w;
+  } else if (seg === 'cloud') {
+    const o = makeCloud(); o.wx = x; obstacles.push(o);
+    len = o.w;
+  } else if (seg === 'plats') {
+    let px = x, ph = 72 + Math.floor(crng() * 4) * 9;
+    const n = 1 + Math.floor(crng() * (lvl >= 2 ? 3 : 2));
+    for (let i = 0; i < n; i++) {
+      const w = 150 + Math.floor(crng() * 5) * 30;
+      plats.push({ wx: px, w, h: ph });
+      const nh = Math.max(1, Math.floor(w / 55));
+      for (let k = 0; k < nh; k++) hearts.push(makeHeart(px + 30 + k * 55, ph + 32));
+      if (i === 0 && crng() < 0.5) { const o = makeCactus(crng() < 0.5 ? 'small' : 'tall'); o.wx = px + w / 2 - o.w / 2; obstacles.push(o); }
+      if (lvl >= 2 && crng() < 0.35) foes.push(makeFoe(px + w / 2, Math.min(w / 2 - 30, 50), ph));
+      const step = crng();
+      const gapP = 50 + Math.floor(crng() * 4) * 20;
+      px += w + (i < n - 1 ? gapP : 0);
+      ph = step < 0.45 ? Math.min(ph + 60, 190) : step < 0.75 ? ph : Math.max(72, ph - 40);
+    }
+    len = px - x;
+  } else if (seg === 'pit') {
+    const jd = v * 0.62, maxW = Math.max(95, jd * 0.55);
+    const w = Math.round(90 + crng() * (maxW - 90));
+    pits.push({ wx: x, w });
+    hearts.push(makeHeart(x + w * 0.2, 75)); hearts.push(makeHeart(x + w * 0.5, 125)); hearts.push(makeHeart(x + w * 0.8, 75));
+    if (lvl >= 3 && crng() < 0.4) plats.push({ wx: x + w * 0.2, w: Math.max(90, Math.round(w * 0.6)), h: 84 });
+    len = w;
+  } else {
+    foes.push(makeFoe(x + 60, 40 + crng() * 50, 0));
+    hearts.push(makeHeart(x + 60, 150));
+    len = 160;
+  }
+  const minGap = Math.max(300, v * 0.85);
+  const gap = minGap + crng() * minGap * 0.8;
+  const lo = crng(), pu = crng(), puType = crng();
+  if (lo < 0.38) hearts.push(makeHeart(x + len + gap * 0.4, 30));
+  if (days > 25 && pu < 0.055) {
     const t = puType < 0.34 ? 'shield' : puType < 0.67 ? 'magnet' : 'double';
     const high = crng() < 0.5;
-    pups.push({ wx: x + o.w + gap * 0.74, yOff: (high ? 118 : 34) + PU[t].height / 2, type: t, ph: crng() * 6, gone: false });
+    pups.push({ wx: x + len + gap * 0.72, yOff: (high ? 118 : 34) + PU[t].height / 2, type: t, ph: crng() * 6, gone: false });
   }
-  genX = x + o.w + gap;
+  genX = x + len + gap;
 }
-function fillCourse() { let n = 0; while (genX < dist + W + 140 && n < 60) { generateNext(); n++; } }
+function fillCourse() { let n = 0; while (genX < dist + W + 160 && n < 60) { generateNext(); n++; } }
+function pruneCourse() {
+  const keep = o => o.wx + (o.w || 60) - dist > -60;
+  obstacles = obstacles.filter(o => o.wx + o.w - dist > -40);
+  plats = plats.filter(keep); pits = pits.filter(keep);
+  foes = foes.filter(f => !f.dead && f.wx0 + f.range + 60 - dist > -60);
+  gates = gates.filter(g => g.wx + 140 - dist > -60);
+}
 const sxOf = o => o.wx - dist;
 const bobOf = (ph, amp, f) => Math.sin(gt * f + ph) * amp;
 
+/* ---------------- Body physics: platforms, pits and ground (shared by both runners) ---------------- */
+function overPit(fx0, fx1) { for (const p of pits) if (fx0 >= p.wx - 2 && fx1 <= p.wx + p.w + 2) return true; return false; }
+function supportAt(fx0, fx1, dy) {
+  if (dy > 0.5) { for (const p of plats) if (fx1 > p.wx && fx0 < p.wx + p.w && Math.abs(p.h - dy) < 1) return p.h; return null; }
+  if (dy < -0.5) return null;
+  return overPit(fx0, fx1) ? null : 0;
+}
+function landingAt(fx0, fx1, prevDy, dy) {
+  let top = null;
+  for (const p of plats) if (fx1 > p.wx && fx0 < p.wx + p.w && prevDy >= p.h - 0.01 && dy <= p.h) { if (top === null || p.h > top) top = p.h; }
+  if (top !== null) return top;
+  if (prevDy >= -0.01 && dy <= 0 && !overPit(fx0, fx1)) return 0;
+  return null;
+}
+function stepBody(b, x, dt, local, wd) {
+  if (b.respawnT > 0) { b.respawnT -= dt; b.vy = 0; b.ground = false; if (b.respawnT > 0) return; }
+  const fx0 = wd + x + 20, fx1 = wd + x + 46;
+  if (b.ground) {
+    const s = supportAt(fx0, fx1, b.dy);
+    if (s === null) { b.ground = false; b.vy = 0; } else b.dy = s;
+  }
+  if (b.buffer > 0) b.buffer -= dt;
+  if (!b.ground) {
+    const prev = b.dy;
+    b.vy += GRAV * dt;
+    b.dy -= b.vy * dt;
+    if (b.vy > 0) {
+      const land = landingAt(fx0, fx1, prev, b.dy);
+      if (land !== null) {
+        b.dy = land; b.vy = 0; b.ground = true;
+        if (local && state === 'play' && meAlive && b.buffer > 0) jump();
+      } else if (b.dy < -95) {
+        if (local) fellInPit(); else { b.dy = -95; b.vy = 0; }
+      }
+    }
+  }
+}
+function physics(dt, local) { stepBody(dino, dino.x, dt, !!local, dist); }
+
 /* ---------------- Input ---------------- */
 function jump() {
-  if (dino.ground) {
+  if (dino.ground && dino.respawnT <= 0) {
     dino.vy = -JUMP_V; dino.ground = false; dino.buffer = 0;
-    if (state === 'play') { sfx.jump(); puff(dino.x + 30, GROUND - 2, 4); }
+    if (state === 'play') {
+      sfx.jump(); puff(dino.x + 30, GROUND - 2 - dino.dy, 4);
+      myLastJumpGt = gt;
+      if (inCoop()) {
+        sendState('jump');
+        const p = room.partner;
+        if (p && Math.abs(gt - (p.lastJumpGt || -99)) < 0.22) syncJump();
+      }
+    }
   } else dino.buffer = 0.13;
 }
 function press() { if (state === 'play' && meAlive && !(inCoop() && gt <= 0)) jump(); }
-function release() { if (!dino.ground && dino.vy < -CUT_V) dino.vy = -CUT_V; }
+function release() {
+  if (!dino.ground && dino.vy < -CUT_V) { dino.vy = -CUT_V; if (inCoop() && state === 'play') sendState('cut'); }
+}
 
 cv.addEventListener('pointerdown', e => { e.preventDefault(); press(); });
 window.addEventListener('pointerup', release);
@@ -1198,7 +1349,7 @@ function startGame() {
   daily.c.runsDay++; progress('runsDay', daily.c.runsDay); saveDaily();
   const bonus = touchStreak();
   if (bonus) toast('Daily love bonus · +' + bonus + ' ♥', '🔥 ' + plural(streak.count, 'day') + ' streak. Come back tomorrow to grow it.', 3400);
-  else toast('The day we met · ' + fmt(START), noteFor(0), 3000);
+  else toast('Level 1 · ' + levelName(0), 'The day we met, ' + fmt(START) + '. Everything started here.', 3000);
 }
 function pauseGame() { if (state !== 'play' || inCoop()) return; state = 'paused'; hideToast(); saveCoins(); saveDaily(); show('ovPause'); }
 function resumeGame() { state = 'play'; show(null); }
@@ -1220,6 +1371,27 @@ function onMonth(m) {
   else toast(fmt(addMonths(START, m)), FUTURE[(m - MONTHS - 1) % FUTURE.length]);
   saveFarthest();
 }
+function compareLine() {
+  const p = room && room.partner;
+  if (!p || !partnerInRun()) return '';
+  const me = Math.floor(score), them = p.score;
+  return me > them ? 'You lead ' + me + ' to ' + them + '! 👑' : me < them ? partnerName() + ' leads ' + them + ' to ' + me + '. Catch up!' : 'Neck and neck at ' + me + '!';
+}
+function onLevel(l) {
+  curLevel = l;
+  themeFrom = themeMix(); themeTo = l % 5; themeK = 0;
+  sfx.level();
+  confetti(REDUCED ? 10 : 40);
+  progress('levelRun', l + 1);
+  let sub;
+  if (inCoop() && !meAlive) { reviveMe(true); sub = 'Checkpoint! You are back in the run.'; }
+  else {
+    const gained = lives < 3;
+    lives = Math.min(3, lives + 1);
+    sub = inCoop() ? (gained ? '+1 life. ' : '') + compareLine() : gained ? 'Checkpoint! You got a life back.' : 'Checkpoint! Keep going.';
+  }
+  toast('Level ' + (l + 1) + ' · ' + levelName(l), sub || 'Checkpoint!', 3000);
+}
 function onToday() {
   reachedToday = true;
   saveFarthest();
@@ -1229,7 +1401,8 @@ function onToday() {
   if (inCoop()) { toast('Today · ' + fmt(TODAY), 'You made it to today together! Keep running into your future.', 3600); return; }
   if (letterSeen !== MONTHS) {
     letterSeen = MONTHS; store.set('letterSeen', letterSeen);
-    state = 'celebrate'; obstacles = []; hearts = []; pups = [];
+    state = 'celebrate'; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = [];
+    if (dino.dy < 0 || dino.respawnT > 0) { dino.dy = 0; dino.vy = 0; dino.ground = true; dino.respawnT = 0; }
     genX = Math.max(genX, dist + W + 200);
     viki.mode = 'enter'; viki.x = W + 10; viki.dy = 0; viki.anim = 0;
     viki.sp = Math.max(300, (W + 10 - (dino.x + 60)) / 1.3);
@@ -1239,16 +1412,15 @@ function onToday() {
     toast('Today · ' + fmt(TODAY), 'You made it to today again. Now we run together.', 3200);
   }
 }
-function onHit(o) {
-  o.hit = true;
+function loseLife(kind) {
   if (shieldOn) {
     shieldOn = false; inv = 1.1; flash = 0.12;
     sfx.shield(); buzz(30);
     puff(dino.x + 50, GROUND - 40 - dino.dy, 12);
     floatText(dino.x + 30, dinoTop() - 16, "Purest's hug!", '#2f7fae');
-    return;
+    return false;
   }
-  lastHit = o.kind;
+  lastHit = kind;
   lives--; inv = 1.6; shake = REDUCED ? 0 : 0.25; flash = 0.28;
   combo = 0; mult = 1;
   sfx.hit(); buzz(70);
@@ -1257,6 +1429,38 @@ function onHit(o) {
     if (inCoop()) goDown(false);
     else { state = 'dying'; timer = 0.9; hideToast(); sfx.over(); buzz([60, 40, 120]); }
   }
+  return true;
+}
+function onHit(o) { o.hit = true; loseLife(o.kind); }
+function fellInPit() {
+  dino.dy = 150; dino.vy = 0; dino.ground = false; dino.respawnT = 0.9;
+  if (shieldOn) { loseLife('pit'); return; }
+  const hadLives = lives;
+  loseLife('pit');
+  if (state === 'play' && meAlive && hadLives > 1) floatText(dino.x + 30, GROUND - 190, 'Oops! Up you go', '#7a3cc4');
+  if (inCoop()) sendState('pit');
+}
+function stomp(f) {
+  f.dead = true;
+  run.stomps++;
+  const g = 25 * (doubleT > 0 ? 2 : 1);
+  score += g;
+  dino.vy = -STOMP_V; dino.ground = false; dino.buffer = 0;
+  sfx.stomp(); buzz(25);
+  puff(foeX(f) - dist + 21, GROUND - f.h - 10, 12);
+  floatText(dino.x + 30, dinoTop() - 14, 'Stomp! +' + g, '#7a3cc4');
+  progress('stompRun', run.stomps);
+  if (inCoop()) { NET.send('k', { id: f.id, run: room.run }, true); sendState('stomp'); }
+}
+function syncJump() {
+  if (!meAlive || gt - lastSyncGt < 0.6) return;
+  lastSyncGt = gt; syncJumps++;
+  const g = 10 * (doubleT > 0 ? 2 : 1);
+  score += g;
+  sfx.sync();
+  const mx = (dino.x + slotFor(room.partner.role)) / 2 + 30;
+  burstHearts(mx, GROUND - 130 - dino.dy, REDUCED ? 3 : 8);
+  floatText(mx, GROUND - 150 - dino.dy, 'In sync! +' + g, '#ff3d7f');
 }
 function collectHeart(h) {
   h.gone = true;
@@ -1285,8 +1489,8 @@ function collectHeart(h) {
       sfx.revive(); buzz([40, 30, 40]);
       floatText(slotFor(room.partner.role) + 30, GROUND - 110, 'Back to life!', '#ff3d7f');
       toast('You brought ' + partnerName() + ' back!', 'Love wins again. Keep running, both of you.', 2600);
-      sendState();
     }
+    sendState('');
   }
 }
 function pickPower(p) {
@@ -1310,9 +1514,10 @@ function gameOver() {
   saveFarthest(); saveCoins(); saveDaily();
   $('oScore').textContent = s; $('oBest').textContent = best; $('oNew').hidden = !isNew;
   const rankNow = rankOf(best);
-  $('oEyebrow').textContent = rankNow > rankStart ? 'New rank: ' + RANKS[rankNow][1] : isNew ? 'Look at you go' : 'Game over';
-  const titles = lastHit === 'cloud'
-    ? ['A grumpy cloud got you', 'That cloud was jealous']
+  $('oEyebrow').textContent = rankNow > rankStart ? 'New rank: ' + RANKS[rankNow][1] : isNew ? 'Look at you go' : 'Game over · level ' + (curLevel + 1);
+  const titles = lastHit === 'cloud' ? ['A grumpy cloud got you', 'That cloud was jealous']
+    : lastHit === 'pit' ? ['Into the gap you went', 'Mind the gap, my love']
+    : lastHit === 'foe' ? ['A grumpy puff got you', 'Stomp them next time']
     : ['Ouch, that cactus won', 'Oops! One more try?', 'So close, my love'];
   $('oTitle').textContent = reachedToday ? 'You ran into our future' : titles[Math.floor(Math.random() * titles.length)];
   const gapToBest = prevBest - s;
@@ -1320,9 +1525,11 @@ function gameOver() {
   $('oClose').hidden = !close;
   if (close) $('oClose').textContent = 'So close! Only ' + gapToBest + ' away from your best.';
   const chips = $('oChips'); chips.innerHTML = '';
+  chips.appendChild(chip('Level ' + (curLevel + 1), 'ok'));
   chips.appendChild(chip('+' + run.coins + ' ♥ earned'));
   chips.appendChild(chip(plural(run.hearts, 'heart')));
   if (run.maxMult > 1) chips.appendChild(chip('x' + run.maxMult + ' combo', 'hot'));
+  if (run.stomps > 0) chips.appendChild(chip(plural(run.stomps, 'stomp')));
   if (run.near > 0) chips.appendChild(chip(plural(run.near, 'close call')));
   $('oBar').style.width = Math.min(100, s / TOTAL_DAYS * 100) + '%';
   const reached = addDays(START, s);
@@ -1335,17 +1542,6 @@ function gameOver() {
 }
 
 /* ---------------- Simulation ---------------- */
-function physics(dt) {
-  if (dino.buffer > 0) dino.buffer -= dt;
-  if (!dino.ground) {
-    dino.vy += GRAV * dt;
-    dino.dy -= dino.vy * dt;
-    if (dino.dy <= 0) {
-      dino.dy = 0; dino.vy = 0; dino.ground = true;
-      if (state === 'play' && meAlive && dino.buffer > 0) jump();
-    }
-  }
-}
 const overlap = (ax, ay, aw, ah, bx, by, bw, bh) => ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
 const dinoTop = () => GROUND - 75 - dino.dy;
 function hitObstacle(o) {
@@ -1360,6 +1556,19 @@ function touches(x, top, w, h) {
   const t = dinoTop();
   for (const d of DBOX) if (overlap(dino.x + d.x - 4, t + d.y - 4, d.w + 8, d.h + 8, x + 3, top + 3, w - 6, h - 6)) return true;
   return false;
+}
+function checkFoes() {
+  const t = dinoTop(), feet = t + 72;
+  for (const f of foes) {
+    if (f.dead) continue;
+    const img = FOE[0], fx = foeX(f) - dist, top = GROUND - f.h - img.height + 3;
+    const bx = fx + 6, by = top + 6, bw = img.width - 12, bh = img.height - 9;
+    let hit = false;
+    for (const d of DBOX) if (overlap(dino.x + d.x, t + d.y, d.w, d.h, bx, by, bw, bh)) { hit = true; break; }
+    if (!hit) continue;
+    if (dino.vy > 0 && feet - by < 20) stomp(f);
+    else if (inv <= 0) { loseLife('foe'); return; }
+  }
 }
 function trackPasses() {
   for (const o of obstacles) {
@@ -1397,7 +1606,8 @@ function stepWorld(dt) {
   if (doubleT > 0) doubleT -= dt;
   if (tagT > 0) tagT -= dt;
   if (inv > 0) inv -= dt;
-  physics(dt);
+  fillCourse();
+  if (meAlive) physics(dt, true);
   dino.x += (dino.tx - dino.x) * Math.min(1, dt * 3);
   if (viki.mode === 'run') {
     viki.x += (30 - viki.x) * Math.min(1, dt * 3);
@@ -1407,9 +1617,9 @@ function stepWorld(dt) {
     for (const h of hist) { if (h[0] <= gt - 0.11) v = h[1]; else break; }
     viki.dy = v;
   }
-  fillCourse();
+  if (inCoop() && room.partner && room.partner.body && room.partner.alive && room.partner.run === room.run) stepBody(room.partner.body, slotFor(room.partner.role), dt, false, dist);
+  for (const g of gates) if (!g.passed && g.wx + 20 < dist + dino.x + 30) { g.passed = true; if (state === 'play') onLevel(g.lvl); }
   trackPasses();
-  obstacles = obstacles.filter(o => sxOf(o) + o.w > -40);
   if (magnetT > 0 && meAlive) {
     const k = Math.min(1, dt * 7);
     for (const h of hearts) {
@@ -1417,7 +1627,11 @@ function stepWorld(dt) {
       if (!h.gone && x < dino.x + 300 && x > dino.x - 20) { h.wx += (dist + dino.x + 22 - h.wx) * k; h.yOff += (dino.dy + 50 - h.yOff) * k; }
     }
   }
-  if (meAlive && inv <= 0) for (const o of obstacles) { if (!o.hit && hitObstacle(o)) { onHit(o); break; } }
+  if (meAlive && state === 'play' && dino.respawnT <= 0) {
+    if (inv <= 0) for (const o of obstacles) { if (!o.hit && hitObstacle(o)) { onHit(o); break; } }
+    if (state === 'play' && meAlive) checkFoes();
+  }
+  pruneCourse();
   if (state !== 'play') return;
   if (meAlive) {
     for (const h of hearts) {
@@ -1449,6 +1663,7 @@ function milestones(prev) {
 }
 function updateFx(dt) {
   clock += dt;
+  if (themeK < 1) themeK = Math.min(1, themeK + dt / 1.5);
   for (const p of parts) { p.age += dt; p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; if (p.rot !== undefined) p.rot += p.vr * dt; }
   parts = parts.filter(p => p.age < p.life);
   for (const f of floats) { f.age += dt; f.y -= 40 * dt; }
@@ -1460,9 +1675,9 @@ function updateFx(dt) {
 }
 function tick(dt) {
   if (state === 'play') { if (inCoop()) coopTick(dt); else stepWorld(dt); }
-  else if (state === 'dying') { physics(dt); timer -= dt; if (timer <= 0) gameOver(); }
+  else if (state === 'dying') { physics(dt, false); timer -= dt; if (timer <= 0) gameOver(); }
   else if (state === 'celebrate') {
-    physics(dt);
+    physics(dt, false);
     if (viki.mode === 'enter') {
       viki.anim += dt * 9;
       viki.x -= viki.sp * dt;
@@ -1476,27 +1691,38 @@ function tick(dt) {
     }
   }
   else if (state === 'start') {
-    physics(dt);
+    physics(dt, false);
     idleT += dt;
     if (idleT > 2.6 && dino.ground) { idleT = 0; dino.vy = -560; dino.ground = false; }
   }
-  else if (state === 'over' && inCoop()) physics(dt);
+  else if (state === 'over' && inCoop()) { if (meAlive) physics(dt, false); }
   updateFx(dt);
 }
 
 /* ---------------- Playing together (two phones) ---------------- */
 const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const FAST = new Set(['st', 'ping', 'pong']);
 let myRole = store.get('role', 'her') === 'purest' ? 'purest' : 'her';
+const RTC = { pc: null, dc: null, open: false, pend: [], remoteSet: false, tries: 0, lastTry: 0 };
 const NET = {
   id: 'p' + Math.random().toString(36).slice(2, 10),
   client: null, base: '',
   ready() { return !!(this.client && this.client.connected); },
-  send(type, data) {
+  mq(type, data) {
     if (!this.ready()) return;
     try { this.client.publish(this.base + '/' + type, JSON.stringify(Object.assign({ from: this.id }, data)), { qos: 0 }); } catch (e) {}
   },
+  dc(type, data) {
+    if (!RTC.open || !RTC.dc || RTC.dc.readyState !== 'open') return false;
+    try { RTC.dc.send(JSON.stringify(Object.assign({ from: this.id, _t: type }, data))); return true; } catch (e) { return false; }
+  },
+  send(type, data, both) {
+    const viaDc = this.dc(type, data);
+    if (!viaDc || both || !FAST.has(type)) this.mq(type, data);
+  },
   close() {
+    rtcReset();
     const c = this.client; this.client = null;
     if (!c) return;
     try { c.publish(this.base + '/bye', JSON.stringify({ from: this.id }), { qos: 0 }); } catch (e) {}
@@ -1536,6 +1762,74 @@ function connectBroker(url) {
     c.on('error', fail);
   }));
 }
+
+/* Direct phone-to-phone link (WebRTC), set up through the relay; the relay stays as the fallback */
+function rtcReset() {
+  try { if (RTC.dc) RTC.dc.close(); } catch (e) {}
+  try { if (RTC.pc) RTC.pc.close(); } catch (e) {}
+  RTC.pc = null; RTC.dc = null; RTC.open = false; RTC.pend = []; RTC.remoteSet = false;
+}
+function rtcChannel(ch) {
+  RTC.dc = ch;
+  ch.onopen = () => {
+    RTC.open = true;
+    if (room && !room.host) { room.syncWin = []; startSync(8); }
+    if (current === 'ovRoom') renderRoom();
+  };
+  ch.onclose = () => { RTC.open = false; if (current === 'ovRoom') renderRoom(); };
+  ch.onmessage = e => {
+    let m;
+    try { m = JSON.parse(e.data); } catch (x) { return; }
+    if (m && typeof m._t === 'string') deliver(m._t, m);
+  };
+}
+function rtcNewPc() {
+  if (typeof RTCPeerConnection === 'undefined') return null;
+  rtcReset();
+  let pc;
+  try { pc = new RTCPeerConnection({ iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }, { urls: 'stun:global.stun.twilio.com:3478' }] }); }
+  catch (e) { return null; }
+  RTC.pc = pc;
+  pc.onicecandidate = e => { if (e.candidate && room && room.partner) NET.mq('sig', { to: room.partner.id, cand: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate }); };
+  pc.onconnectionstatechange = () => { if (pc.connectionState === 'failed' || pc.connectionState === 'closed') { RTC.open = false; } };
+  return pc;
+}
+const TEST_LAG = +store.get('lag', 0) || 0, NO_RTC = !!store.get('noRtc', false);
+function deliver(type, m) { if (TEST_LAG) setTimeout(() => handleMsg(type, m), TEST_LAG + Math.random() * 60); else handleMsg(type, m); }
+async function rtcOffer() {
+  if (!room || !room.host || !partnerHere() || RTC.open || NO_RTC) return;
+  RTC.tries++; RTC.lastTry = Date.now();
+  const pc = rtcNewPc();
+  if (!pc) return;
+  try {
+    rtcChannel(pc.createDataChannel('g', { ordered: false, maxRetransmits: 0 }));
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    NET.mq('sig', { to: room.partner.id, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+  } catch (e) {}
+}
+async function rtcSignal(m) {
+  if (!room || m.to !== NET.id || !room.partner || m.from !== room.partner.id) return;
+  try {
+    if (m.sdp && m.sdp.type === 'offer' && !room.host) {
+      const pc = rtcNewPc();
+      if (!pc) return;
+      pc.ondatachannel = e => rtcChannel(e.channel);
+      await pc.setRemoteDescription(m.sdp); RTC.remoteSet = true;
+      for (const c of RTC.pend.splice(0)) { try { await pc.addIceCandidate(c); } catch (e) {} }
+      const ans = await pc.createAnswer();
+      await pc.setLocalDescription(ans);
+      NET.mq('sig', { to: m.from, sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp } });
+    } else if (m.sdp && m.sdp.type === 'answer' && room.host && RTC.pc && !RTC.remoteSet) {
+      await RTC.pc.setRemoteDescription(m.sdp); RTC.remoteSet = true;
+      for (const c of RTC.pend.splice(0)) { try { await RTC.pc.addIceCandidate(c); } catch (e) {} }
+    } else if (m.cand) {
+      if (RTC.pc && RTC.remoteSet) { try { await RTC.pc.addIceCandidate(m.cand); } catch (e) {} }
+      else RTC.pend.push(m.cand);
+    }
+  } catch (e) {}
+}
+
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const validOutfit = id => OUTFITS.some(o => o.id === id) ? id : 'berry';
 const partnerHere = () => !!(room && room.partner && Date.now() - room.partner.last < 5000);
@@ -1577,7 +1871,7 @@ $('btnCoopAgain').addEventListener('click', hostStart);
 
 async function openRoom(code, host, role, brokerIdx) {
   if (room) NET.close();
-  const me = room = { code, host, role, partner: null, synced: host, offset: 0, bestRtt: 0, samples: 0, syncing: false, run: 0, t0Local: 0, status: 'Connecting…', err: false, offline: false };
+  const me = room = { code, host, role, partner: null, synced: host, offset: 0, offApplied: 0, rtt: 0, syncWin: [], syncing: false, run: 0, t0Host: 0, t0Local: 0, status: 'Connecting…', err: false, offline: false };
   renderRoom(); show('ovRoom');
   const list = brokerList();
   let client = null, idx = brokerIdx;
@@ -1596,9 +1890,13 @@ async function openRoom(code, host, role, brokerIdx) {
   }
   if (host) me.code = code + idx;
   NET.client = client;
-  NET.base = 'runtoyou/v1/' + me.code;
+  NET.base = 'runtoyou/v2/' + me.code;
   client.subscribe(NET.base + '/+', { qos: 0 });
-  client.on('message', onNetMessage);
+  client.on('message', (topic, payload) => {
+    let m;
+    try { m = JSON.parse(payload.toString()); } catch (e) { return; }
+    deliver(topic.slice(topic.lastIndexOf('/') + 1), m);
+  });
   client.on('offline', () => { if (room === me) { me.offline = true; renderRoom(); } });
   client.on('connect', () => { if (room === me) { me.offline = false; client.subscribe(NET.base + '/+', { qos: 0 }); sendHi(); renderRoom(); } });
   try { history.replaceState(null, '', '#' + me.code); } catch (e) {}
@@ -1611,6 +1909,10 @@ function leaveRoom() {
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
   state = 'start'; hideToast(); reset();
   fillStart(); show('ovStart');
+}
+function linkLabel() {
+  const ms = room && room.rtt ? ' · ' + Math.round(room.rtt) + ' ms' : '';
+  return RTC.open ? 'Direct link' + ms : 'Via relay' + ms;
 }
 function renderRoom() {
   if (!room) return;
@@ -1630,6 +1932,7 @@ function renderRoom() {
   const chips = $('roomChips'); chips.innerHTML = '';
   chips.appendChild(chip('You: ' + (room.role ? NAMES[room.role] : '…'), 'ok'));
   chips.appendChild(p ? chip(NAMES[p.role] + ': here', 'ok') : chip(room.host ? 'Waiting for ' + partnerName() : 'Not connected yet'));
+  if (p) chips.appendChild(chip(linkLabel(), RTC.open ? 'ok' : ''));
   $('hostCtrls').style.display = room.host && full && !room.err ? '' : 'none';
   if (full) $('btnInvite').href = 'https://wa.me/?text=' + encodeURIComponent('Come run with me! 💗 Tap to join our game (room ' + room.code + '): ' + shareUrl());
   $('btnStartCoop').disabled = !p || !NET.ready();
@@ -1637,67 +1940,72 @@ function renderRoom() {
 }
 function sendHi() {
   if (!room) return;
-  NET.send('hi', { role: room.role, host: room.host, outfit, synced: room.host || room.synced, run: room.run || 0 });
+  NET.send('hi', { role: room.role, host: room.host, outfit, synced: room.host || room.synced, run: room.run || 0, rtt: Math.round(room.rtt || 0), p2p: RTC.open });
 }
-function sendState() {
+function sendState(kind) {
   if (!inCoop()) return;
   NET.send('st', {
-    run: room.run, gt: Math.round(gt * 100) / 100, dy: Math.round(dino.dy), alive: meAlive, lives, inv: inv > 0,
-    score: Math.floor(score), outfit, rv, rs: reviveSerial, rto: room.partner ? room.partner.id : ''
-  });
+    run: room.run, gt: Math.round(gt * 1000) / 1000, dy: Math.round(dino.dy * 10) / 10, vy: Math.round(dino.vy), g: dino.ground ? 1 : 0, rsp: Math.round(dino.respawnT * 1000) / 1000,
+    alive: meAlive, lives, inv: inv > 0, score: Math.floor(score), outfit, rv, rs: reviveSerial, rto: room.partner ? room.partner.id : '', jk: kind || '', lv: curLevel
+  }, !!kind);
 }
 function ensurePartner(id) {
   if (!room.partner || room.partner.id !== id) {
-    room.partner = { id, role: 'purest', outfit: 'berry', last: Date.now(), alive: true, lives: 3, inv: false, score: 0, dy: 0, dyShown: 0, rv: 0, rs: 0, run: 0, synced: false };
+    room.partner = { id, role: 'purest', outfit: 'berry', last: Date.now(), alive: true, lives: 3, inv: false, score: 0, dyShown: 0, rv: 0, rs: 0, run: 0, synced: false, snapGt: -1e9, lastJumpGt: -99, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0 } };
+    rtcReset(); RTC.tries = 0;
     if (state !== 'play') sfx.heart();
   }
   return room.partner;
 }
-function startSync() {
+function startSync(n) {
+  if (!room || room.host) return;
   room.syncing = true;
   let k = 0;
   const me = room;
   const iv = setInterval(() => {
-    if (room !== me || k++ >= 8 || me.samples >= 5) { clearInterval(iv); me.syncing = false; return; }
+    if (room !== me || k++ >= (n || 8)) { clearInterval(iv); me.syncing = false; return; }
     NET.send('ping', { t: Date.now() });
-  }, 220);
+  }, 180);
 }
-function onNetMessage(topic, payload) {
-  if (!room) return;
-  let m;
-  try { m = JSON.parse(payload.toString()); } catch (e) { return; }
-  if (!m || typeof m !== 'object' || typeof m.from !== 'string' || m.from === NET.id) return;
-  const type = topic.slice(topic.lastIndexOf('/') + 1);
+function handleMsg(type, m) {
+  if (!room || !m || typeof m !== 'object' || typeof m.from !== 'string' || m.from === NET.id) return;
   const now = Date.now();
   if (type === 'hi') {
     const role = m.role === 'purest' ? 'purest' : 'her';
-    if (room.host === !!m.host) return;                                     // one host, one guest
-    if (room.partner && room.partner.id !== m.from && partnerHere()) return; // room is full
-    if (!room.host) room.role = role === 'her' ? 'purest' : 'her';           // guest takes the other runner
+    if (room.host === !!m.host) return;
+    if (room.partner && room.partner.id !== m.from && partnerHere()) return;
+    if (!room.host) room.role = role === 'her' ? 'purest' : 'her';
+    const isNew = !room.partner || room.partner.id !== m.from;
     const p = ensurePartner(m.from);
+    if (isNew) sendHi();
     p.role = room.role === 'her' ? 'purest' : 'her';
     p.outfit = validOutfit(m.outfit); p.synced = !!m.synced; p.last = now;
-    if (!room.host && !room.synced && !room.syncing) startSync();
+    if (room.host && m.rtt) room.rtt = +m.rtt || room.rtt;
+    if (!room.host && !room.synced && !room.syncing) startSync(8);
+    if (room.host && !RTC.open && RTC.tries < 4 && now - RTC.lastTry > 9000) rtcOffer();
     if (current === 'ovRoom') renderRoom();
     return;
   }
+  if (type === 'sig') { rtcSignal(m); return; }
   if (type === 'ping') { if (room.host) NET.send('pong', { to: m.from, t: +m.t || 0, ht: Date.now() }); return; }
   if (type === 'pong') {
     if (room.host || m.to !== NET.id) return;
     const rtt = now - (+m.t || 0);
     if (!(rtt >= 0 && rtt < 10000)) return;
-    const off = (+m.ht || 0) + rtt / 2 - now;
-    if (!room.samples || rtt < room.bestRtt) { room.bestRtt = rtt; room.offset = off; }
-    room.samples++;
-    if (room.samples >= 2 && !room.synced) { room.synced = true; sendHi(); }
+    room.syncWin.push({ rtt, off: (+m.ht || 0) + rtt / 2 - now });
+    if (room.syncWin.length > 16) room.syncWin.shift();
+    let bestS = room.syncWin[0];
+    for (const s of room.syncWin) if (s.rtt < bestS.rtt) bestS = s;
+    room.offset = bestS.off; room.rtt = bestS.rtt;
+    if (room.syncWin.length >= 2 && !room.synced) { room.synced = true; room.offApplied = room.offset; sendHi(); }
     return;
   }
   if (type === 'start') {
     if (room.host || !room.partner || m.from !== room.partner.id) return;
     const run = +m.run, seed = +m.seed, t0 = +m.t0;
     if (!run || run === room.run || !isFinite(seed) || !isFinite(t0)) return;
-    const offset = room.synced ? room.offset : (t0 - 3600) - (now - 150);
-    beginCoopRun(seed, t0 - offset, run);
+    if (!room.synced) { room.offset = (t0 - 3600) - (now - 150); room.offApplied = room.offset; }
+    beginCoopRun(seed, t0, run);
     return;
   }
   if (type === 'st') {
@@ -1705,17 +2013,37 @@ function onNetMessage(topic, payload) {
     if (!p || p.id !== m.from) return;
     const wasAlive = p.alive && p.run === room.run;
     p.last = now; p.run = +m.run || 0;
-    p.dy = clamp(+m.dy || 0, 0, 400); p.alive = !!m.alive; p.lives = clamp(m.lives | 0, 0, 3); p.inv = !!m.inv;
+    p.alive = !!m.alive; p.lives = clamp(m.lives | 0, 0, 3); p.inv = !!m.inv;
     p.score = clamp(m.score | 0, 0, 1e7); p.outfit = validOutfit(m.outfit); p.rv = clamp(m.rv | 0, 0, 3); p.rs = m.rs | 0;
-    if (inCoop() && p.run === room.run && state === 'play') {
-      if (wasAlive && !p.alive && meAlive) { toast(partnerName() + ' is down!', 'Catch 3 hearts to bring ' + pron() + ' back.', 3000); sfx.hit(); buzz(50); }
-      if (m.rto === NET.id && p.rs > handledRevive) { handledRevive = p.rs; if (!meAlive) reviveMe(); }
+    const mg = +m.gt;
+    if (p.run === room.run && isFinite(mg) && mg > p.snapGt) {
+      p.snapGt = mg;
+      p.body = { dy: clamp(+m.dy || 0, -100, 600), vy: clamp(+m.vy || 0, -2000, 3000), ground: !!m.g, respawnT: clamp(+m.rsp || 0, 0, 2), buffer: 0 };
+      if (inCoop() && gt > mg) {
+        let t = mg, n = 0;
+        while (t < gt - 1e-4 && n < 120) { const h = Math.min(1 / 120, gt - t); t += h; stepBody(p.body, slotFor(p.role), h, false, distAt(t)); n++; }
+      }
+      if (m.jk === 'jump') {
+        p.lastJumpGt = mg;
+        if (inCoop() && state === 'play' && Math.abs(mg - myLastJumpGt) < 0.22) syncJump();
+      }
     }
+    if (inCoop() && p.run === room.run && state === 'play') {
+      if (wasAlive && !p.alive && meAlive) { toast(partnerName() + ' is down!', 'Catch 3 hearts or reach the next level to bring ' + pron() + ' back.', 3000); sfx.hit(); buzz(50); }
+      if (m.rto === NET.id && p.rs > handledRevive) { handledRevive = p.rs; if (!meAlive) reviveMe(false); }
+    }
+    return;
+  }
+  if (type === 'k') {
+    if (!inCoop() || +m.run !== room.run) return;
+    const f = foes.find(x => x.id === +m.id);
+    if (f && !f.dead) { f.dead = true; puff(foeX(f) - dist + 21, GROUND - f.h - 10, 10); }
     return;
   }
   if (type === 'bye') {
     if (!room.partner || room.partner.id !== m.from) return;
     room.partner.last = 0;
+    rtcReset();
     if (state === 'play' && inCoop()) toast(partnerName() + ' left the game', meAlive ? 'Keep running, you can still finish this run.' : 'The run is over.', 3000);
     if (current === 'ovRoom') renderRoom();
     if (current === 'ovCoopOver') fillCoopOver();
@@ -1725,42 +2053,50 @@ function hostStart() {
   if (!room || !room.host || !NET.ready() || !partnerHere()) return;
   const run = Date.now(), seed = Math.floor(Math.random() * 1e9), t0 = Date.now() + 3600;
   const msg = { run, seed, t0 };
-  NET.send('start', msg);
-  setTimeout(() => NET.send('start', msg), 400);
-  setTimeout(() => NET.send('start', msg), 1000);
+  NET.send('start', msg, true);
+  setTimeout(() => NET.send('start', msg, true), 400);
+  setTimeout(() => NET.send('start', msg, true), 1000);
   beginCoopRun(seed, t0, run);
 }
-function beginCoopRun(seed, t0Local, runId) {
+function beginCoopRun(seed, t0Host, runId) {
   if (!room) return;
   audio(); ensureDaily();
   reset();
   resetCourse(seed);
-  room.run = runId; room.t0Local = t0Local;
+  room.run = runId; room.t0Host = t0Host;
+  if (!room.host) room.offApplied = room.offset;
+  room.t0Local = t0Host - (room.host ? 0 : room.offApplied);
   if (!room.role) room.role = 'her';
   dino.x = dino.tx = slotFor(room.role);
-  gt = Math.min(0, (Date.now() - t0Local) / 1000);
+  gt = Math.min(0, (Date.now() - room.t0Local) / 1000);
   bestAnnounced = true;
-  if (room.partner) Object.assign(room.partner, { alive: true, lives: 3, rv: 0, rs: 0, dy: 0, dyShown: 0 });
+  if (room.partner) Object.assign(room.partner, { alive: true, lives: 3, rv: 0, rs: 0, dyShown: 0, snapGt: -1e9, lastJumpGt: -99, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0 } });
   state = 'play'; show(null);
   daily.c.runsDay++; progress('runsDay', daily.c.runsDay); saveDaily();
   const bonus = touchStreak();
   if (bonus) toast('Daily love bonus · +' + bonus + ' ♥', '🔥 ' + plural(streak.count, 'day') + ' streak. Come back tomorrow to grow it.', 3400);
-  else toast('Run together', 'Stay alive for each other. If one of you falls, the other catches 3 hearts.', 3400);
+  else toast('Run together', 'Jump at the same moment for a bonus. If one of you falls, catch 3 hearts or reach the next level.', 3600);
 }
 function goDown(stepped) {
   meAlive = false; combo = 0; mult = 1; inv = 0; shieldOn = false; magnetT = 0; doubleT = 0;
   sfx.over(); buzz([60, 40, 120]);
-  toast(stepped ? 'You left the game, so you went down' : 'You\'re down!', partnerInRun() && room.partner.alive ? partnerName() + ' can bring you back by catching 3 hearts.' : 'Hold on…', 3400);
-  sendState();
+  toast(stepped ? 'You left the game, so you went down' : 'You\'re down!', partnerInRun() && room.partner.alive ? partnerName() + ' can bring you back with 3 hearts, or at the next level gate.' : 'Hold on…', 3400);
+  sendState('down');
 }
-function reviveMe() {
+function reviveMe(checkpoint) {
   meAlive = true; lives = 1; inv = 2.5;
+  dino.dy = 150; dino.vy = 0; dino.ground = false; dino.respawnT = 0.9;
   sfx.revive(); buzz([40, 30, 40]);
-  burstHearts(dino.x + 30, GROUND - 60, REDUCED ? 6 : 18);
-  toast(partnerName() + ' brought you back to life!', 'One life left. Make it count, my love.', 3000);
-  sendState();
+  burstHearts(dino.x + 30, GROUND - 160, REDUCED ? 6 : 18);
+  if (!checkpoint) toast(partnerName() + ' brought you back to life!', 'One life left. Make it count, my love.', 3000);
+  sendState('revive');
 }
 function coopTick(dt) {
+  if (!room.host) {
+    const d = room.offset - room.offApplied, mx = dt * 40;
+    room.offApplied += Math.max(-mx, Math.min(mx, d));
+  }
+  room.t0Local = room.t0Host - (room.host ? 0 : room.offApplied);
   const target = (Date.now() - room.t0Local) / 1000;
   if (target < 0) {
     gt = target;
@@ -1773,7 +2109,10 @@ function coopTick(dt) {
     while (gt < target - 0.0005 && n < 60 && state === 'play') { stepWorld(Math.min(1 / 60, target - gt)); n++; }
   }
   const p = room.partner;
-  if (p) p.dyShown += (p.dy - p.dyShown) * Math.min(1, dt * 14);
+  if (p && p.body) {
+    const d = p.body.dy - p.dyShown;
+    p.dyShown += d * Math.min(1, dt * (Math.abs(d) > 70 ? 20 : 30));
+  }
   if (state !== 'play') return;
   const partnerAlive = partnerInRun() && p.alive;
   if (gt > 0 && !meAlive && !partnerAlive) { coopEndT += dt; if (coopEndT > 1.4) coopOver(); }
@@ -1783,6 +2122,10 @@ function coopOver() {
   state = 'over';
   played = true; store.set('played', true);
   saveFarthest(); saveCoins(); saveDaily();
+  const me = Math.floor(score), pp = room.partner && room.partner.run === room.run ? room.partner.score : 0;
+  const wins = store.get('coopWins', { me: 0, them: 0 });
+  if (me > pp) wins.me++; else if (pp > me) wins.them++;
+  store.set('coopWins', wins);
   fillCoopOver(true);
   show('ovCoopOver');
 }
@@ -1794,14 +2137,19 @@ function fillCoopOver(fresh) {
     const tb = store.get('coopBest', 0);
     $('coNew').hidden = !(team > tb);
     if (team > tb) store.set('coopBest', team);
+    $('coEyebrow').textContent = me > pp ? 'You win this run 👑' : pp > me ? partnerName() + ' wins this run 👑' : 'A perfect tie';
     const titles = ['We will get them next time', 'Down together, up together', 'One more run, my love?'];
     $('coTitle').textContent = reachedToday ? 'You ran into your future together' : titles[Math.floor(Math.random() * titles.length)];
   }
   $('coMe').textContent = me;
   $('coPartLbl').textContent = partnerName();
   $('coPart').textContent = pp;
+  const wins = store.get('coopWins', { me: 0, them: 0 });
   const chips = $('coChips'); chips.innerHTML = '';
-  chips.appendChild(chip(plural(revivesGiven, 'revive') + ' by you', revivesGiven ? 'hot' : ''));
+  chips.appendChild(chip('Level ' + (curLevel + 1), 'ok'));
+  chips.appendChild(chip('Wins: you ' + wins.me + ' · ' + partnerName() + ' ' + wins.them, 'hot'));
+  chips.appendChild(chip(plural(syncJumps, 'in-sync jump')));
+  chips.appendChild(chip(plural(revivesGiven, 'revive') + ' by you'));
   chips.appendChild(chip('+' + run.coins + ' ♥ earned'));
   chips.appendChild(chip('Team best: ' + store.get('coopBest', 0)));
   $('coReach').textContent = 'Together you ran to ' + fmt(addDays(START, team)) + '.';
@@ -1813,10 +2161,12 @@ function fillCoopOver(fresh) {
     ? partnerName() + ' has left the room.'
     : 'Waiting for ' + partnerName() + ' to start the next run…';
 }
-setInterval(() => { if (inCoop() && state === 'play') sendState(); }, 80);
+setInterval(() => { if (inCoop() && state === 'play') sendState(''); }, 66);
 setInterval(() => {
   if (!room) return;
   sendHi();
+  if (!room.host && room.partner && !room.syncing) NET.send('ping', { t: Date.now() });
+  if (room.host && partnerHere() && !RTC.open && RTC.tries < 4 && Date.now() - RTC.lastTry > 9000) rtcOffer();
   if (current === 'ovRoom') renderRoom();
   if (current === 'ovCoopOver') fillCoopOver(false);
 }, 1000);
@@ -1862,13 +2212,53 @@ function pill(text, x, y, color) {
   ctx.fillStyle = color || '#c42e68';
   ctx.fillText(text, x, y);
 }
+function bubble(x, dy) {
+  ctx.strokeStyle = 'rgba(255,255,255,' + (0.6 + 0.3 * Math.sin(clock * 10)).toFixed(2) + ')';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(x + 33, GROUND - 75 - dy + 40, 44, 0, Math.PI * 2); ctx.stroke();
+}
+function drawWeather(theme, alpha, n) {
+  if (alpha <= 0.02 || REDUCED) return;
+  ctx.globalAlpha = alpha;
+  if (theme === 1) {
+    ctx.fillStyle = 'rgba(225,240,255,0.55)';
+    for (let i = 0; i < 46; i++) {
+      const x = ((i * 97 - clock * 160) % (W + 80) + W + 80) % (W + 80) - 40;
+      const y = ((i * 53 + clock * 560) % (GROUND + 60)) - 30;
+      ctx.fillRect(Math.round(x), Math.round(y), 2, 12);
+    }
+  } else if (theme === 3) {
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    for (let i = 0; i < 56; i++) {
+      const sp = 30 + (i % 5) * 14;
+      const x = ((i * 131 + Math.sin(clock + i) * 18 - clock * 30) % (W + 40) + W + 40) % (W + 40) - 20;
+      const y = ((i * 71 + clock * sp) % (H + 20)) - 10;
+      ctx.fillRect(Math.round(x), Math.round(y), i % 3 === 0 ? 6 : 3, i % 3 === 0 ? 6 : 3);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+function drawLanterns(alpha) {
+  if (alpha <= 0.02) return;
+  for (let i = 0; i < 7; i++) {
+    const x = ((i * 173 - clock * 14) % (W + 80) + W + 80) % (W + 80) - 40;
+    const y = 50 + (i * 61) % Math.max(60, GROUND - 230) + Math.sin(clock * 1.3 + i) * 6;
+    ctx.globalAlpha = alpha * 0.3; ctx.fillStyle = '#ffd166'; pixelDisc(x + 6, y + 9, 15);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#ff7a3d'; ctx.fillRect(Math.round(x), Math.round(y), 12, 18);
+    ctx.fillStyle = '#ffd166'; ctx.fillRect(Math.round(x) + 3, Math.round(y) + 3, 6, 12);
+    ctx.fillStyle = '#7a2e12'; ctx.fillRect(Math.round(x) + 3, Math.round(y) - 3, 6, 3); ctx.fillRect(Math.round(x) + 3, Math.round(y) + 18, 6, 3);
+  }
+  ctx.globalAlpha = 1;
+}
 let lastHeaderN = -1;
 function draw() {
   const n = nightness(), pal = palette(n);
-  if (Math.abs(n - lastHeaderN) > 0.04) {
+  if (Math.abs(n - lastHeaderN) > 0.04 || themeK < 1) {
     lastHeaderN = n;
-    header.style.color = n > 0.5 ? NIGHTP.hud : '';
-    hint.style.color = n > 0.5 ? NIGHTP.hud : '';
+    const dark = n > 0.5 || themeTo === 4;
+    header.style.color = dark ? NIGHTP.hud : '';
+    hint.style.color = dark ? NIGHTP.hud : '';
   }
   ctx.save();
   if (shake > 0) ctx.translate((Math.random() - 0.5) * 7, (Math.random() - 0.5) * 7);
@@ -1877,26 +2267,29 @@ function draw() {
   g.addColorStop(0, pal.skyTop); g.addColorStop(1, pal.skyBot);
   ctx.fillStyle = g; ctx.fillRect(-10, -10, W + 20, GROUND + 12);
 
-  if (n > 0.03) {
+  const starA = Math.max(n, themeTo === 4 ? themeK * 0.9 : 0);
+  if (starA > 0.03) {
     for (const s of stars) {
-      const a = n * (0.55 + 0.45 * Math.sin(clock * 2 + s.ph));
+      const a = starA * (0.55 + 0.45 * Math.sin(clock * 2 + s.ph));
       ctx.fillStyle = 'rgba(255,240,250,' + a.toFixed(3) + ')';
       if (s.big) { ctx.fillRect(s.x - 3, s.y, 9, 3); ctx.fillRect(s.x, s.y - 3, 3, 9); }
       else ctx.fillRect(s.x, s.y, 3, 3);
     }
   }
   const orbX = W * 0.74, orbY = Math.max(70, GROUND * 0.38);
-  if (n < 0.97) {
-    ctx.globalAlpha = (1 - n) * 0.3; ctx.fillStyle = '#ffb38a'; pixelDisc(orbX, orbY, 45);
-    ctx.globalAlpha = (1 - n) * 0.95; ctx.fillStyle = '#ffa37a'; pixelDisc(orbX, orbY, 30);
+  const moonA = Math.max(n, themeTo === 4 ? themeK : 0);
+  if (moonA < 0.97) {
+    ctx.globalAlpha = (1 - moonA) * 0.3; ctx.fillStyle = '#ffb38a'; pixelDisc(orbX, orbY, 45);
+    ctx.globalAlpha = (1 - moonA) * 0.95; ctx.fillStyle = '#ffa37a'; pixelDisc(orbX, orbY, 30);
     ctx.globalAlpha = 1;
   }
-  if (n > 0.03) {
-    ctx.globalAlpha = n * 0.25; ctx.fillStyle = '#fff4d6'; pixelDisc(orbX, orbY, 36);
-    ctx.globalAlpha = n; pixelDisc(orbX, orbY, 24);
+  if (moonA > 0.03) {
+    ctx.globalAlpha = moonA * 0.25; ctx.fillStyle = '#fff4d6'; pixelDisc(orbX, orbY, 36);
+    ctx.globalAlpha = moonA; pixelDisc(orbX, orbY, 24);
     ctx.fillStyle = '#e8dcc0'; ctx.fillRect(orbX - 9, orbY - 6, 6, 6); ctx.fillRect(orbX + 6, orbY + 3, 9, 6); ctx.fillRect(orbX - 3, orbY + 12, 3, 3);
     ctx.globalAlpha = 1;
   }
+  if (themeTo === 2) drawLanterns(themeK);
   ctx.globalAlpha = 0.85 - n * 0.62;
   for (const c of bgClouds) ctx.drawImage(PUFF, Math.round(c.x), Math.round(c.y), PUFF.width * c.s, PUFF.height * c.s);
   ctx.globalAlpha = 1;
@@ -1930,6 +2323,35 @@ function draw() {
       }
     }
   }
+  for (const p of pits) {
+    const x = Math.round(p.wx - dist), w = Math.round(p.w);
+    if (x > W + 10 || x + w < -10) continue;
+    ctx.fillStyle = pal.skyBot; ctx.fillRect(x, GROUND - 15, w, 15);
+    ctx.fillStyle = '#2a1630'; ctx.fillRect(x, GROUND, w, H - GROUND + 12);
+    ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(x, GROUND, 6, H - GROUND + 12); ctx.fillRect(x + w - 6, GROUND, 6, H - GROUND + 12);
+    ctx.fillStyle = pal.line; ctx.fillRect(x - 3, GROUND, 3, 12); ctx.fillRect(x + w, GROUND, 3, 12);
+  }
+  for (const gte of gates) {
+    const x = Math.round(gte.wx - dist);
+    if (x > W + 20 || x < -160) continue;
+    ctx.fillStyle = pal.line;
+    ctx.fillRect(x, GROUND - 170, 9, 170); ctx.fillRect(x + 111, GROUND - 170, 9, 170);
+    ctx.fillStyle = '#ff5c93'; ctx.fillRect(x - 6, GROUND - 186, 132, 27);
+    ctx.fillStyle = '#c42e68'; ctx.fillRect(x - 6, GROUND - 162, 132, 3);
+    ctx.font = '9px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
+    ctx.fillText('LEVEL ' + (gte.lvl + 1), x + 60, GROUND - 168);
+    ctx.fillStyle = '#ffd35c'; ctx.fillRect(x + 3, GROUND - 198, 3, 12); ctx.fillRect(x + 6, GROUND - 198, 9, 6);
+  }
+  for (const p of plats) {
+    const x = Math.round(p.wx - dist), y = Math.round(GROUND - p.h), w = Math.round(p.w);
+    if (x > W + 10 || x + w < -10) continue;
+    ctx.fillStyle = 'rgba(60,20,50,0.12)'; ctx.fillRect(x + 6, GROUND + 3, w - 12, 3);
+    ctx.fillStyle = pal.plat; ctx.fillRect(x, y, w, 15);
+    ctx.fillStyle = pal.platTop; ctx.fillRect(x, y, w, 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    for (let tx = x + 18; tx < x + w - 3; tx += 18) ctx.fillRect(tx, y + 4, 3, 11);
+    ctx.fillRect(x, y + 12, w, 3);
+  }
 
   for (const h of hearts) {
     const x = h.wx - dist;
@@ -1962,15 +2384,24 @@ function draw() {
       ctx.globalAlpha = 1;
     }
   }
+  for (const f of foes) {
+    if (f.dead) continue;
+    const x = foeX(f) - dist;
+    if (x > W + 30 || x < -60) continue;
+    const img = FOE[Math.floor(gt * 6) % 2], top = Math.round(GROUND - f.h - img.height + 3);
+    const left = Math.cos(gt * 1.5 + f.ph) < 0;
+    if (left) ctx.drawImage(img, Math.round(x), top);
+    else { ctx.save(); ctx.translate(Math.round(x) + img.width, top); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0); ctx.restore(); }
+  }
 
   const coop = inCoop();
   const partner = coop && room.partner && room.partner.run === room.run ? room.partner : null;
-  const shadowAt = (x, dy) => { const w = Math.max(16, 40 - dy * 0.15); ctx.fillRect(Math.round(x + 30 - w / 2), GROUND + 3, Math.round(w), 3); };
+  const shadowAt = (x, dy) => { if (dy < -2) return; const w = Math.max(16, 40 - dy * 0.15); ctx.fillRect(Math.round(x + 30 - w / 2), GROUND + 3, Math.round(w), 3); };
   ctx.fillStyle = 'rgba(80,20,60,0.16)';
   shadowAt(dino.x, dino.dy);
   if (viki.mode !== 'off') shadowAt(viki.x, viki.dy);
   if (partner && partner.alive) shadowAt(slotFor(partner.role), partner.dyShown);
-  if (n > 0.35) { ctx.shadowColor = 'rgba(255,214,236,0.85)'; ctx.shadowBlur = 9 * n * S * DPR; }
+  if (n > 0.35 || themeTo === 4) { ctx.shadowColor = 'rgba(255,214,236,0.85)'; ctx.shadowBlur = 9 * Math.max(n, themeTo === 4 ? 0.8 : 0) * S * DPR; }
 
   let vtop = 0;
   if (viki.mode !== 'off') {
@@ -1980,10 +2411,12 @@ function draw() {
   }
   let ptop = 0;
   if (partner) {
-    const ghost = !partner.alive, gone = !partnerHere();
-    const pose = ghost ? 'stand' : partner.dyShown > 2 ? 'jump' : state === 'play' && gt > 0 ? (Math.floor(dist / 28) % 2 ? 'a' : 'b') : 'stand';
+    const ghost = !partner.alive, gone = !partnerHere(), pb = partner.body || { ground: true };
+    const pose = ghost ? 'stand' : !pb.ground ? 'jump' : state === 'play' && gt > 0 ? (Math.floor(dist / 28) % 2 ? 'a' : 'b') : 'stand';
     const alpha = gone ? 0.25 : ghost ? 0.4 : (partner.inv && Math.floor(clock * 10) % 2 === 0 ? 0.35 : 1);
-    ptop = drawRunner(partner.role, slotFor(partner.role), partner.dyShown + (ghost ? 12 + Math.sin(clock * 3 + 1) * 5 : 0), pose, partner.outfit, alpha, false);
+    const pdy = ghost ? 150 + Math.sin(clock * 3 + 1) * 6 : partner.dyShown;
+    ptop = drawRunner(partner.role, slotFor(partner.role), pdy, pose, partner.outfit, alpha, false);
+    if (!ghost && pb.respawnT > 0) bubble(slotFor(partner.role), pdy);
   }
   const myRoleNow = coop ? room.role : 'her';
   let myPose = 'stand';
@@ -1994,8 +2427,10 @@ function draw() {
   let myAlpha = 1;
   if (ghostMe) myAlpha = 0.4;
   else if (inv > 0 && state === 'play' && Math.floor(inv * 10) % 2 === 0) myAlpha = 0.35;
-  const mytop = drawRunner(myRoleNow, dino.x, dino.dy + (ghostMe ? 12 + Math.sin(clock * 3) * 5 : 0), myPose, outfit, myAlpha, false);
+  const myDy = ghostMe ? 150 + Math.sin(clock * 3) * 6 : dino.dy;
+  const mytop = drawRunner(myRoleNow, dino.x, myDy, myPose, outfit, myAlpha, false);
   ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+  if (!ghostMe && dino.respawnT > 0) bubble(dino.x, dino.dy);
 
   if (shieldOn && meAlive && (state === 'play' || state === 'paused')) {
     ctx.strokeStyle = 'rgba(111,202,245,' + (0.55 + 0.25 * Math.sin(clock * 6)).toFixed(2) + ')';
@@ -2018,6 +2453,11 @@ function draw() {
     const px = slotFor(partner.role) + 30;
     nameTag(TAGS[partner.role] + (partnerHere() ? '' : ' (offline)'), px, ptop - 6);
     if (!partner.alive) miniHearts(px, ptop - 44, rv);
+    const me = Math.floor(score);
+    if (state === 'play' && gt > 0 && me !== partner.score && partnerHere()) {
+      const leaderX = me > partner.score ? dino.x + 30 : px, leaderTop = me > partner.score ? mytop - (ghostMe ? 6 : 0) : ptop - 22;
+      ctx.drawImage(CROWN, Math.round(leaderX - CROWN.width / 2), Math.round(leaderTop - CROWN.height - (me > partner.score ? 4 : 0)));
+    }
   }
   if (ghostMe && partner) miniHearts(dino.x + 30, mytop - 26, partner.rv);
 
@@ -2029,12 +2469,13 @@ function draw() {
     else { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); }
   }
   ctx.globalAlpha = 1;
+  drawWeather(themeTo, themeK, n);
   ctx.textAlign = 'center';
   ctx.font = '10px "Press Start 2P", monospace';
   for (const f of floats) {
     ctx.globalAlpha = 1 - f.age / f.life;
     ctx.fillStyle = f.color || (n > 0.5 ? '#ffdcee' : '#c42e68');
-    if (n > 0.5 && f.color) ctx.fillStyle = '#fff2b8';
+    if ((n > 0.5 || themeTo === 4) && f.color) ctx.fillStyle = '#fff2b8';
     ctx.fillText(f.text, f.x, f.y);
   }
   ctx.globalAlpha = 1;
@@ -2069,7 +2510,7 @@ function drawHud(pal) {
   ctx.fillStyle = pal.hud;
   ctx.textAlign = 'left';
   ctx.font = '11px "Press Start 2P", monospace';
-  ctx.fillText(fmt(addDays(START, Math.floor(score))), 16, HUD + 46);
+  ctx.fillText('LV' + (curLevel + 1) + ' ' + fmt(addDays(START, Math.floor(score))), 16, HUD + 46);
   let px = 16;
   const py = HUD + 58;
   const icon = (pimg, frac) => {
@@ -2137,6 +2578,7 @@ function frame(now) {
   const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
   last = now;
   tick(dt);
+  if (window.__rtyTrace && inCoop() && gt > 0) window.__rtyTrace.push([gt, dino.dy, room.partner ? room.partner.dyShown : null, Date.now()]);
   draw();
   requestAnimationFrame(frame);
 }
@@ -2144,10 +2586,12 @@ function frame(now) {
 window.__rty = {
   get state() { return state; }, get score() { return score; }, set score(v) { score = v; }, set lives(v) { lives = v; },
   TOTAL_DAYS, MONTHS,
-  info() { return { state, meAlive, lives, rv, gt: Math.round(gt * 10) / 10, dist: Math.round(dist), role: room && room.role, code: room && room.code, host: room && room.host, synced: room && room.synced, offset: room && Math.round(room.offset), partner: room && room.partner && { role: room.partner.role, alive: room.partner.alive, rv: room.partner.rv, run: room.partner.run === room.run, here: partnerHere() }, obstacles: obstacles.slice(0, 3).map(o => Math.round(o.wx)) }; },
+  info() { return { state, meAlive, lives, rv, gt: Math.round(gt * 100) / 100, dist: Math.round(dist), lv: curLevel, dy: Math.round(dino.dy), role: room && room.role, code: room && room.code, host: room && room.host, synced: room && room.synced, offset: room && Math.round(room.offset), offApplied: room && Math.round(room.offApplied), rtt: room && room.rtt, p2p: RTC.open, partner: room && room.partner && { role: room.partner.role, alive: room.partner.alive, rv: room.partner.rv, run: room.partner.run === room.run, here: partnerHere(), dy: Math.round(room.partner.dyShown) } }; },
+  jumpNow() { jump(); },
   fakeHeart() { collectHeart({ wx: dist + dino.x, yOff: 30, ph: 0, gone: false, gold: false }); },
   down() { lives = 0; goDown(false); },
-  give(c) { coins += c; saveCoins(); }
+  give(c) { coins += c; saveCoins(); },
+  warp(t) { if (!inCoop()) { gt = t; dist = distAt(t); genX = Math.max(genX, dist + 200); obstacles = []; hearts = []; plats = []; pits = []; foes = []; lastGateLvl = levelIndexAt(dist); } }
 };
 
 paintSound();
