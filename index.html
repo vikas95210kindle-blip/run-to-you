@@ -212,7 +212,33 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
 .tipbox .note .nlabel{color:#7a3cc4}
 .tipbox .note .ntext{font-size:23px}
 .made{margin:2px 0 0;font-size:13px;font-weight:800;color:var(--muted);text-align:center}
+#actions{position:fixed;z-index:4;right:calc(12px + env(safe-area-inset-right));bottom:calc(env(safe-area-inset-bottom) + 64px);display:none;flex-direction:column-reverse;align-items:center;gap:10px}
+body.playing #actions{display:flex}
+.act{position:relative;border-radius:50%;border:3px solid rgba(255,255,255,.9);display:grid;place-items:center;padding:0;cursor:pointer;
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
+  box-shadow:0 4px 0 rgba(60,20,50,.35), 0 8px 18px rgba(60,20,50,.2);transition:transform .06s}
+.act.down{transform:translateY(3px) scale(.95)}
+.act span.e{font-size:26px;line-height:1}
+.act small{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);font-family:var(--font-digits);font-size:8px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);white-space:nowrap}
+#btnFire{width:66px;height:66px;background:radial-gradient(circle at 35% 30%,#ffb35c,#ff6a1f 70%)}
+#btnBlast{width:54px;height:54px;background:radial-gradient(circle at 35% 30%,#c79bff,#7a3cc4 70%)}
+#btnBlast .n{position:absolute;top:-6px;right:-8px;min-width:22px;height:22px;border-radius:11px;background:#fff;color:#7a3cc4;font:800 13px/22px var(--font-body);text-align:center;box-shadow:0 0 0 2px #7a3cc4}
+#btnBlast.empty{opacity:.45;filter:grayscale(.6)}
+#clear{position:fixed;left:50%;top:38%;z-index:3;width:min(400px,calc(100vw - 32px));transform:translate(-50%,-44%) scale(.96);opacity:0;transition:opacity .35s, transform .35s;
+  background:rgba(255,250,247,.97);border-radius:18px;padding:14px 16px 12px;text-align:center;pointer-events:none;box-shadow:0 0 0 3px #ffc2d8, 0 12px 30px rgba(120,30,80,.25)}
+#clear.show{opacity:1;transform:translate(-50%,-50%)}
+#clear .clT{font-family:var(--font-display);font-weight:700;font-size:28px;line-height:1.05;color:var(--rose-deep);margin:0 0 8px}
+#clear .clTip{background:#f4edff;border-radius:12px;padding:8px 12px;margin:10px 0 8px;text-align:left}
+#clear .clTip .tl{display:block;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#7a3cc4}
+#clear .clTip .tt{display:block;font-family:var(--font-hand);font-size:23px;line-height:1.2;color:var(--ink);margin-top:2px}
+#clear .clN{margin:0;font-weight:800;font-size:14.5px;color:var(--ink)}
+#clear .clC{margin:5px 0 0;font-family:var(--font-digits);font-size:12px;color:var(--rose)}
 @media (max-height:520px){
+  #actions{flex-direction:row-reverse;bottom:calc(env(safe-area-inset-bottom) + 64px);gap:12px}
+  #clear{top:42%;width:min(560px,calc(100vw - 150px));padding:10px 14px 9px}
+  #clear .clT{font-size:22px;margin-bottom:6px}
+  #clear .clTip{margin:7px 0 6px;padding:6px 10px}
+  #clear .clTip .tt{font-size:19px}
   #tip{padding:5px 12px;bottom:calc(env(safe-area-inset-bottom) + 6px);max-width:none}
   #tip .tl{display:inline;font-size:10.5px;margin-right:6px}
   #tip .tt{display:inline;font-size:12.5px;line-height:1.25}
@@ -236,6 +262,17 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
 <p id="hint">Tap anywhere to jump · hold to jump higher</p>
 
 <div id="toast" role="status" aria-live="polite"><strong id="toastTitle"></strong><span id="toastText"></span></div>
+<div id="clear" role="status" aria-live="polite">
+  <p class="clT" id="clTitle"></p>
+  <div class="chips" id="clChips"></div>
+  <div class="clTip"><span class="tl" id="clTipLabel"></span><span class="tt" id="clTipText"></span></div>
+  <p class="clN" id="clNext"></p>
+  <p class="clC" id="clCount"></p>
+</div>
+<div id="actions">
+  <button id="btnFire" class="act" type="button" aria-label="Fire a rocket"><span class="e" aria-hidden="true">🚀</span></button>
+  <button id="btnBlast" class="act" type="button" aria-label="Blast"><span class="e" aria-hidden="true">💥</span><span class="n" id="blastN">1</span></button>
+</div>
 <div id="tip" role="status" aria-live="polite"><span class="tl" id="tipLabel"></span><span class="tt" id="tipText"></span></div>
 
 <div id="controls">
@@ -249,15 +286,16 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--ink);outline-offset
   <div class="card">
     <p class="eyebrow">Adventure with friends</p>
     <h2 class="title">Run to You</h2>
-    <p class="days">Climb, bounce and race through five worlds. Play alone or with up to 4 friends.</p>
+    <p class="days">Climb, ride, fly and fight bosses together. Play alone or with up to 4 friends.</p>
     <div class="chips" id="startChips"></div>
     <p class="mhead"><span>Your runner</span></p>
     <div id="startChars" class="cgrid mini" role="group" aria-label="Pick your runner"></div>
     <ul class="how" id="howList">
       <li><span class="ic">↑</span><span>Tap to jump. Hold to jump higher.</span></li>
-      <li><span class="ic">✿</span><span>Jump onto ladders to climb, bounce on springs, ride lifts and stomp grumpy puffs.</span></li>
-      <li><span class="ic">★</span><span>Open treasure chests up high. Every 20 hearts fills your power bar.</span></li>
-      <li><span class="ic">♥</span><span>Clear a level to get a love tip for your partner.</span></li>
+      <li><span class="ic">✿</span><span>Climb ladders to the rooftops, bounce on springs and stomp grumpy puffs.</span></li>
+      <li><span class="ic">➤</span><span>Fire homing rockets and Blast the screen. Every third level has a boss.</span></li>
+      <li><span class="ic">★</span><span>Grab sports bikes, monster trucks, jets and armour. Fill the power bar with 20 hearts for a free ride.</span></li>
+      <li><span class="ic">♥</span><span>After each level there is a short break with a love tip for your partner.</span></li>
     </ul>
     <div id="startMissions"></div>
     <p id="startBest" class="best"></p>
@@ -898,6 +936,9 @@ const sfx = {
   stomp() { tone(220, 0.12, 'square', 0.06, 0, 520); },
   spring() { tone(260, 0.3, 'square', 0.05, 0, 1300); },
   climb() { [392, 494, 587, 698].forEach((f, i) => tone(f, 0.06, 'square', 0.03, i * 0.05)); },
+  fire() { tone(1100, 0.09, 'square', 0.025, 0, 380); },
+  boom() { tone(140, 0.45, 'sawtooth', 0.07, 0, 40); tone(90, 0.5, 'square', 0.05, 0.04, 30); },
+  hitBoss() { tone(330, 0.07, 'square', 0.035, 0, 180); },
   sync() { tone(784, 0.1, 'triangle', 0.07); tone(988, 0.1, 'triangle', 0.07, 0.06); tone(1175, 0.16, 'triangle', 0.07, 0.12); }
 };
 function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
@@ -908,11 +949,40 @@ function paintSound() { $('btnSound').innerHTML = muted ? SOUND_OFF : SOUND_ON; 
 const SPEED0 = 340, ACC = 4.5, SPEED_MAX = 700, GRAV = 2600, JUMP_V = 900, CUT_V = 520, PTS_DIV = 42, STOMP_V = 640, SPRING_V = 1500;
 const T_MAX = (SPEED_MAX - SPEED0) / ACC;
 const D_MAX = SPEED0 * T_MAX + 0.5 * ACC * T_MAX * T_MAX;
-const distAt = t => t <= 0 ? 0 : t <= T_MAX ? SPEED0 * t + 0.5 * ACC * t * t : D_MAX + SPEED_MAX * (t - T_MAX);
-const speedAtTime = t => Math.min(SPEED_MAX, SPEED0 + ACC * Math.max(0, t));
-const speedAtDist = x => x >= D_MAX ? SPEED_MAX : Math.sqrt(SPEED0 * SPEED0 + 2 * ACC * Math.max(0, x));
 const LV_STARTS = [0, 6500, 15000, 26000, 39000];
+function lvStart(l) { return l < LV_STARTS.length ? LV_STARTS[l] : 39000 + (l - 4) * 15000; }
+const isBoss = l => l % 3 === 2;            // every third level is a boss level
+const PAUSE = 4.5;                           // the world stops this long at the end of each level
+const baseDist = t => t <= 0 ? 0 : t <= T_MAX ? SPEED0 * t + 0.5 * ACC * t * t : D_MAX + SPEED_MAX * (t - T_MAX);
+const baseSpeed = t => Math.min(SPEED_MAX, SPEED0 + ACC * Math.max(0, t));
+const baseTimeAtDist = d => d <= 0 ? 0 : d <= D_MAX ? (-SPEED0 + Math.sqrt(SPEED0 * SPEED0 + 2 * ACC * d)) / ACC : T_MAX + (d - D_MAX) / SPEED_MAX;
+const TB = [];
+const tbAt = l => TB[l] !== undefined ? TB[l] : (TB[l] = baseTimeAtDist(lvStart(l)));
+// real time -> running time, with a pause at the start of every level (same on every phone)
+function motion(t) {
+  if (t <= 0) return { tb: t, paused: false };
+  let acc = 0;
+  for (let l = 1; l < 400; l++) {
+    const s = tbAt(l) + acc;
+    if (t < s) return { tb: t - acc, paused: false };
+    if (t < s + PAUSE) return { tb: tbAt(l), paused: true, l, rem: s + PAUSE - t };
+    acc += PAUSE;
+  }
+  return { tb: t - acc, paused: false };
+}
+const distAt = t => baseDist(motion(t).tb);
+const speedAtTime = t => { const m = motion(t); return m.paused ? 0 : baseSpeed(m.tb); };
+const speedAtDist = x => x >= D_MAX ? SPEED_MAX : Math.sqrt(SPEED0 * SPEED0 + 2 * ACC * Math.max(0, x));
+function realTimeAtDist(d) { let t = baseTimeAtDist(d); for (let l = 1; lvStart(l) < d; l++) t += PAUSE; return t; }
+// Everyone runs in the same lane; each phone draws its own runner in front and friends behind
+let LANE = 44, laneN = 1, laneGap = 100;
+function setLanes(n) {
+  laneN = Math.max(1, n);
+  laneGap = laneN <= 2 ? 100 : laneN === 3 ? 80 : laneN === 4 ? 60 : 50;
+  LANE = laneN <= 1 ? 44 : 60 + laneGap * (laneN - 1);
+}
 const LEVEL_NAMES = ['Sunny Meadow', 'Monsoon Rooftops', 'Lantern Lanes', 'Winter Hills', 'Starlight Sky'];
+const BOSS_NAME = 'STORM KING';
 const LEVEL_HINTS = ['Jump onto ladders to climb up high.', 'Climb to the rooftops. Mind the gaps between roofs.', 'Bounce on springs to reach the lantern road.', 'Ride the lifts across the icy gaps.', 'Springs, ladders and lifts. Reach the stars together.'];
 function levelIndexAt(x) {
   if (x >= 39000) return 4 + Math.floor((x - 39000) / 15000);
@@ -1030,6 +1100,42 @@ const CHEST = [
   sprite(['.GGGGGGGGGG.', 'G..........G', 'GGGGGGGGGGGG', 'GYYYYYYYYYYG', 'GBBBBYYBBBBG', 'GBBBBBBBBBBG', 'GBBBBBBBBBBG', 'GGGGGGGGGGGG'], { G: '#d29a2e', B: '#8a4b2a', Y: '#ffe08a' }, '#4a2a14')
 ];
 const TEAM_GOAL = 20, NO_PREDICT = !!store.get('noPredict', false);
+const BOMB = sprite(['......YR...', '.....F.....', '....FF.....', '...KKKKK...', '..KKKKKKK..', '.KKWKKKKKK.', '.KWKKKKKKK.', '.KKKKKKKKK.', '.KKKKKKKKK.', '..KKKKKKK..', '...KKKKK...'],
+  { K: '#2a2340', W: '#8f86b8', F: '#b07a3a', Y: '#ffd35c', R: '#ff5c3a' }, '#120c20');
+function makeBomb() { const img = BOMB; return { kind: 'bomb', w: img.width, h: img.height, yOff: img.height - 3, ph: 0, parts: [{ img, ox: 0, oy: 0, box: { x: 6, y: 12, w: img.width - 12, h: img.height - 15 } }] }; }
+let rockets = [], fireCd = 0, blasts = 1, boss = null, myBossDmg = 0, clearCard = null, roundBase = null;
+const bossX = () => W - 150, bossY = () => GROUND - 285;
+let fireHeld = false;
+/* ---------------- Vehicles ---------------- */
+const VEHPAL = { R: '#ff3d5a', W: '#ffffff', K: '#1d1626', G: '#8a8fa0', S: '#c9ced9', B: '#ff8a1f', C: '#bfe8ff', Y: '#ffe65c', J: '#8b96a8', D: '#5d6778', F: '#ff8a1f', N: '#e6e9f0' };
+const BIKE = [
+  ['...............KK.......', '..............KK........', '.....RRRRRRRRRRK........', '....RRRRRRRRRRRRRR......', '...RRRWWRRRRRRRRRRRR....', '..KKKK.RRRRRRRRR..KKKK..',
+   '.KK..KK.GGGGGG...KK..KK.', 'K..SS..K........K..SS..K', 'K.SSSS.K........K.SSSS.K', 'K..SS..K........K..SS..K', '.KK..KK..........KK..KK.', '..KKKK............KKKK..'],
+  ['...............KK.......', '..............KK........', '.....RRRRRRRRRRK........', '....RRRRRRRRRRRRRR......', '...RRRWWRRRRRRRRRRRR....', '..KKKK.RRRRRRRRR..KKKK..',
+   '.KK..KK.GGGGGG...KK..KK.', 'K.S..S.K........K.S..S.K', 'K..SS..K........K..SS..K', 'K.S..S.K........K.S..S.K', '.KK..KK..........KK..KK.', '..KKKK............KKKK..']
+].map(r => sprite(r, VEHPAL, '#120c20'));
+const TRUCK = [
+  ['..............BBBBBBBBB....', '..............BCCCCBCCCB...', '..............BCCCCBCCCB...', '..BBBBBBBBBBBBBBBBBBBBBBBB.', '.BBBBBBBBBBBBBBBBBBBBBBBBBY', '.BBBBBBBBBBBBBBBBBBBBBBBBBB',
+   '....GGG..............GGG...', '...KKKKKK..........KKKKKK..', '..KKKKKKKK........KKKKKKKK.', '.KKKKSSKKKK......KKKKSSKKKK', '.KKKSSSSKKK......KKKSSSSKKK', '.KKKKSSKKKK......KKKKSSKKKK', '..KKKKKKKK........KKKKKKKK.', '...KKKKKK..........KKKKKK..'],
+  ['..............BBBBBBBBB....', '..............BCCCCBCCCB...', '..............BCCCCBCCCB...', '..BBBBBBBBBBBBBBBBBBBBBBBB.', '.BBBBBBBBBBBBBBBBBBBBBBBBBY', '.BBBBBBBBBBBBBBBBBBBBBBBBBB',
+   '....GGG..............GGG...', '...KKKKKK..........KKKKKK..', '..KKSKKSKK........KKSKKSKK.', '.KKKKSSKKKK......KKKKSSKKKK', '.KKSSKKSSKK......KKSSKKSSKK', '.KKKKSSKKKK......KKKKSSKKKK', '..KKSKKSKK........KKSKKSKK.', '...KKKKKK..........KKKKKK..']
+].map(r => sprite(r, VEHPAL, '#120c20'));
+const JET = [
+  ['..J.............................', '..JJ............................', '..JJJ...........................', '..JJJJ........CCCC..............', '.JJJJJJJJJJJJCCCCCCJJJJJJJ......',
+   'FFJJJJJJJJJJJJJJJJJJJJJJJJJJJJ..', 'FFDDDDDDDDDDDDDDDDDDDDDDDDDDDDNN', '.JJJJJJJJJJJJJJJJJJJJJJJJJJJJ...', '.........JJJJJJJJJJ.............', '..........JJJJJJJ...............', '...........JJJJ.................'],
+  ['..J.............................', '..JJ............................', '..JJJ...........................', '..JJJJ........CCCC..............', '.JJJJJJJJJJJJCCCCCCJJJJJJJ......',
+   'YFJJJJJJJJJJJJJJJJJJJJJJJJJJJJ..', 'YFDDDDDDDDDDDDDDDDDDDDDDDDDDDDNN', '.JJJJJJJJJJJJJJJJJJJJJJJJJJJJ...', '.........JJJJJJJJJJ.............', '..........JJJJJJJ...............', '...........JJJJ.................']
+].map(r => sprite(r, VEHPAL, '#2a3140'));
+function iconOf(img, w) {
+  const c = document.createElement('canvas'); c.width = w; c.height = Math.round(img.height * w / img.width);
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(img, 0, 0, c.width, c.height); return c;
+}
+PU.bike = iconOf(BIKE[0], 44); PU.truck = iconOf(TRUCK[0], 46); PU.jet = iconOf(JET[0], 48);
+PU.armor = sprite(['.SSSSSSSS.', 'SSWWSSSSSS', 'SWSSSSSSSS', 'SSSSSSSSSS', 'SSSSSSSSSS', '.SSSSSSSS.', '.SSSSSSSS.', '..SSSSSS..', '...SSSS...', '....SS....'], { S: '#8fa3b8', W: '#ffffff' }, '#3a4a5c');
+const VEH_TIME = { bike: 9, truck: 9, jet: 8 };
+const VEH_WORD = { bike: 'SPORTS BIKE!', truck: 'MONSTER TRUCK!', jet: 'JET FIGHTER!', armor: 'ARMOUR x3' };
+const VEH_LIST = ['bike', 'truck', 'jet', 'armor'];
+let armor = 0;
 let chests = [], bestDist = +store.get('bestDist', 0) || 0, banner = null, pops = [], teamLevel = 0, chestsOpened = 0, passedBest = false;
 function hudPop(text, color) { pops.push({ text, color: color || '#ff5c93', age: 0, life: 1.8 }); if (pops.length > 3) pops.shift(); }
 function showBanner(title, sub) { banner = { title, sub, t: 0 }; }
@@ -1044,7 +1150,7 @@ let shake = 0, flash = 0, lastMonth = 0, reachedToday = false, lastHit = 'cactus
 let shieldOn = false, magnetT = 0, doubleT = 0, combo = 0, mult = 1, run = null, bestAnnounced = false, tagT = 0, rankStart = 0;
 let meAlive = true, rv = 0, rvTarget = '', reviveSerial = 0, reviveTo = '', revivesGiven = 0, reviveWaitUntil = 0, coopEndT = 0, lastCount = 99;
 let myLastJumpGt = -99, lastSyncGt = -99, syncJumps = 0, climbs = 0;
-const dino = { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0, climb: null };   // the runner on this phone
+const dino = { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0, climb: null, veh: null, vehT: 0, ft: 230 };   // the runner on this phone
 const viki = { mode: 'off', x: 0, dy: 0, anim: 0, sp: 300 };                                      // Purest as the solo-mode companion
 let hist = [], meetT = 0;
 let room = null;                                                                                    // the co-op room, when playing together
@@ -1067,11 +1173,12 @@ function reset() {
   myLastJumpGt = -99; lastSyncGt = -99; syncJumps = 0; climbs = 0; curLevel = 0;
   themeFrom = THEMEC[0]; themeTo = 0; themeK = 1;
   shieldOn = false; magnetT = 0; doubleT = 0; combo = 0; mult = 1; tagT = 0;
-  run = { hearts: 0, cacti: 0, clouds: 0, near: 0, maxMult: 1, coins: 0, golden: 0, power: 0, stomps: 0, bestDist0: bestDist };
+  run = { hearts: 0, cacti: 0, clouds: 0, near: 0, maxMult: 1, coins: 0, golden: 0, power: 0, stomps: 0, zaps: 0, bosses: 0, bestDist0: bestDist };
   bestAnnounced = best === 0; rankStart = rankOf(best);
-  Object.assign(dino, { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0, climb: null });
+  Object.assign(dino, { x: 44, tx: 44, dy: 0, vy: 0, ground: true, buffer: 0, respawnT: 0, climb: null, veh: null, vehT: 0, ft: 230 }); armor = 0;
   viki.mode = 'off'; viki.dy = 0; hist = []; meetT = 0;
   banner = null; pops = []; teamLevel = 0; chestsOpened = 0; passedBest = false;
+  rockets = []; fireCd = 0; blasts = 1; boss = null; myBossDmg = 0; clearCard = null; roundBase = { hearts: 0, stomps: 0, score: 0, zaps: 0 };
   resetCourse(Math.floor(Math.random() * 1e9));
 }
 
@@ -1111,11 +1218,19 @@ function resetCourse(seed) {
   genX = 820; obstacles = []; hearts = []; pups = []; plats = []; pits = []; foes = []; gates = []; ladders = []; springs = []; signs = []; chests = [];
   lastGateLvl = 0; foeSeq = 0; forceSeg = null;
 }
-const LEVEL_SIG = ['tower', 'tower', 'spring', 'lift', 'spring'];
+const LEVEL_SIG = ['tower', 'tower2', 'spring', 'lift', 'tower2'];
 function pickSeg(lvl, days) {
   if (forceSeg) { const s = forceSeg; forceSeg = null; return s; }
   const L = Math.min(lvl, 4);
+  if (isBoss(lvl)) {
+    const wb = { bomb: 5, plain: 1, foe: 3, pit: 1, plats: 1 };
+    let tb = 0; for (const k in wb) tb += wb[k];
+    let rb = crng() * tb;
+    for (const k in wb) { rb -= wb[k]; if (rb < 0) return k; }
+    return 'bomb';
+  }
   const w = {
+    tower2: [0, 2, 1, 2, 3][L],
     plain: [5, 3, 3, 2, 2][L],
     cloud: lvl === 0 ? (days > 50 ? 1 : 0) : [1, 2, 1, 2, 2][L],
     plats: [2, 2, 2, 2, 3][L],
@@ -1132,6 +1247,13 @@ function pickSeg(lvl, days) {
   for (const k in w) { r -= w[k]; if (r < 0) return k; }
   return 'plain';
 }
+function pickShort(lvl) {
+  const w = isBoss(lvl) ? { bomb: 4, plain: 1, foe: 2 } : { plain: 4, cloud: lvl ? 1 : 0, foe: lvl ? 2 : 0, pit: lvl ? 1 : 0 };
+  let total = 0; for (const k in w) total += w[k];
+  let r = crng() * total;
+  for (const k in w) { r -= w[k]; if (r < 0) return k; }
+  return 'plain';
+}
 function groundStuff(x0, x1, lvl) {
   // a few ground obstacles under a high route so the low road has its own adventure
   let x = x0 + 120;
@@ -1143,16 +1265,19 @@ function groundStuff(x0, x1, lvl) {
   }
 }
 function generateNext() {
-  const x = genX, v = speedAtDist(x), days = x / PTS_DIV, lvl = levelIndexAt(x);
-  if (lvl > lastGateLvl) {
-    lastGateLvl = lvl;
-    gates.push({ wx: x + 80, lvl, passed: false });
-    for (let k = 0; k < 9; k++) hearts.push(makeHeart(x + 180 + k * 48, 40 + Math.round(70 * Math.sin(k / 8 * Math.PI)), k === 4 ? 1 : 0));
-    forceSeg = LEVEL_SIG[lvl % 5];
-    genX = x + 760;
+  const x = genX, v = speedAtDist(x), days = x / PTS_DIV, lvl = lastGateLvl, PB = lvStart(lvl + 1);
+  if (x >= PB - 300) {
+    // end of the level: a gate, then a calm stretch where the world stops for the Level Clear break
+    lastGateLvl = lvl + 1;
+    gates.push({ wx: PB + 20, lvl: lvl + 1, passed: false });
+    for (let k = 0; k < 9; k++) hearts.push(makeHeart(PB + 420 + k * 48, 40 + Math.round(70 * Math.sin(k / 8 * Math.PI)), k === 4 ? 1 : 0));
+    forceSeg = isBoss(lvl + 1) ? null : LEVEL_SIG[(lvl + 1) % 5];
+    genX = PB + 1400;
     return;
   }
-  const seg = pickSeg(lvl, days);
+  const near = x > PB - 3300;
+  if (near && x >= PB - 480) { hearts.push(makeHeart(x + 60, 30)); genX = PB - 300; return; }
+  const seg = near ? pickShort(lvl) : pickSeg(lvl, days);
   let len = 0;
   if (seg === 'plain') {
     const r = crng();
@@ -1196,6 +1321,33 @@ function generateNext() {
     }
     groundStuff(x + lw, x + total, lvl);
     len = total;
+  } else if (seg === 'tower2') {
+    // two storeys: a ladder to a roof, then a second ladder from that roof up to a higher one
+    const h1 = 190 + Math.floor(crng() * 3) * 30, h2 = h1 + 170 + Math.floor(crng() * 2) * 30, lw = 84;
+    ladders.push({ wx: x, w: lw, h: h1 });
+    if (crng() < 0.3) signs.push({ wx: x - 230, text: 'JUMP ON THE LADDER' });
+    const w1 = 420 + Math.floor(crng() * 3) * 40;
+    plats.push({ wx: x, w: w1, h: h1, roof: true });
+    for (let k = 0; k < Math.floor((w1 - 160) / 50); k++) hearts.push(makeHeart(x + 30 + k * 50, h1 + 32, 0.12));
+    const l2 = x + w1 - 140;
+    ladders.push({ wx: l2, w: lw, h: h2, base: h1 });
+    let rx = l2;
+    const n = 2;
+    for (let i = 0; i < n; i++) {
+      const w = 300 + Math.floor(crng() * 4) * 40;
+      plats.push({ wx: rx, w, h: h2, roof: true });
+      for (let k = 0; k < Math.floor(w / 46); k++) hearts.push(makeHeart(rx + 26 + k * 46, h2 + 32, 0.25));
+      if (i === n - 1) chests.push({ wx: rx + w - 70, h: h2, open: false });
+      else if (lvl >= 2 && crng() < 0.5) foes.push(makeFoe(rx + w / 2, Math.min(w / 2 - 40, 60), h2));
+      rx += w + (i < n - 1 ? 80 + Math.floor(crng() * 3) * 20 : 0);
+    }
+    groundStuff(x + lw, rx, lvl);
+    len = rx - x;
+  } else if (seg === 'bomb') {
+    const n = 1 + (crng() < 0.35 ? 1 : 0), sp = Math.max(320, v * 0.95);
+    for (let i = 0; i < n; i++) { const o = makeBomb(); o.wx = x + i * sp; obstacles.push(o); }
+    hearts.push(makeHeart(x + 16, 170));
+    len = (n - 1) * sp + BOMB.width;
   } else if (seg === 'stairs') {
     let px = x, ph = 70;
     const n = 4 + Math.floor(crng() * 2);
@@ -1257,7 +1409,13 @@ function generateNext() {
     const high = crng() < 0.5;
     pups.push({ wx: x + len + gap * 0.72, yOff: (high ? 118 : 34) + PU[t].height / 2, type: t, ph: crng() * 6, gone: false });
   }
+  const vp = crng(), vt = crng(), vh = crng();
+  if (lvl >= 1 && vp < 0.07) {
+    const t = VEH_LIST[Math.floor(vt * VEH_LIST.length)];
+    pups.push({ wx: x + len + gap * 0.5, yOff: (vh < 0.5 ? 120 : 40) + PU[t].height / 2, type: t, ph: crng() * 6, gone: false });
+  }
   genX = x + len + gap;
+  if (near && genX > PB - 300) genX = Math.max(x + len + 200, PB - 300);
 }
 function fillCourse() { let n = 0; while (genX < dist + W + 200 && n < 60) { generateNext(); n++; } }
 function pruneCourse() {
@@ -1275,15 +1433,15 @@ const platH = (p, t) => p.lift ? p.lift.base + p.lift.amp * (1 - Math.cos(t * p.
 
 /* ---------------- Body physics: ground, pits, platforms, ladders, springs and lifts ---------------- */
 function overPit(fx0, fx1) { for (const p of pits) if (fx0 >= p.wx - 2 && fx1 <= p.wx + p.w + 2) return true; return false; }
-function supportAt(fx0, fx1, dy, t) {
+function supportAt(fx0, fx1, dy, t, solid) {
   if (dy > 0.5) {
     for (const p of plats) { if (fx1 > p.wx && fx0 < p.wx + p.w) { const h = platH(p, t); if (Math.abs(h - dy) < (p.lift ? 12 : 1)) return h; } }
     return null;
   }
   if (dy < -0.5) return null;
-  return overPit(fx0, fx1) ? null : 0;
+  return !solid && overPit(fx0, fx1) ? null : 0;
 }
-function landingAt(fx0, fx1, prevDy, dy, t) {
+function landingAt(fx0, fx1, prevDy, dy, t, solid) {
   let top = null;
   for (const p of plats) {
     if (!(fx1 > p.wx && fx0 < p.wx + p.w)) continue;
@@ -1291,20 +1449,31 @@ function landingAt(fx0, fx1, prevDy, dy, t) {
     if (prevDy >= h - (p.lift ? 12 : 0.01) && dy <= h && (top === null || h > top)) top = h;
   }
   if (top !== null) return top;
-  if (prevDy >= -0.01 && dy <= 0 && !overPit(fx0, fx1)) return 0;
+  if (prevDy >= -0.01 && dy <= 0 && (solid || !overPit(fx0, fx1))) return 0;
   return null;
 }
 function stepBody(b, x, dt, local, wd, t, predict) {
   if (b.respawnT > 0) { b.respawnT -= dt; b.vy = 0; b.ground = false; b.climb = null; if (b.respawnT > 0) return; }
   const fx0 = wd + x + 20, fx1 = wd + x + 46;
+  if (b.veh) {
+    b.vehT -= dt;
+    if (b.veh === 'jet' && b.vehT < 0.9) b.ft = 0;            // come in to land
+    if (b.vehT <= 0) { const was = b.veh; b.veh = null; b.vehT = 0; if (local) vehicleOver(was); }
+  }
+  if (b.veh === 'jet') {
+    b.climb = null; b.ground = false; b.vy = 0;
+    b.dy += ((b.ft === undefined ? 230 : b.ft) - b.dy) * Math.min(1, dt * 3.2);
+    return;
+  }
+  const solid = b.veh === 'bike' || b.veh === 'truck';      // wheels roll right over gaps
   if (b.climb) {
     b.dy = Math.min(b.climb.to, b.dy + b.climb.v * dt);
     if (b.dy >= b.climb.to - 0.01) { b.dy = b.climb.to; b.climb = null; b.vy = 0; b.ground = supportAt(fx0, fx1, b.dy, t) !== null; }
     return;
   }
-  if (!b.ground) {
+  if (!b.ground && !b.veh) {
     for (const l of ladders) {
-      if (fx1 > l.wx && fx0 < l.wx + l.w && b.dy < l.h - 8 && b.dy > -40) {
+      if (fx1 > l.wx && fx0 < l.wx + l.w && b.dy < l.h - 8 && b.dy > (l.base || 0) - 40) {
         const dur = Math.max(0.16, Math.min(0.34, (l.wx + l.w - fx0) / Math.max(1, speedAtDist(wd))));
         b.climb = { to: l.h, v: (l.h - b.dy) / dur }; b.vy = 0;
         if (local) { sfx.climb(); climbs++; }
@@ -1313,7 +1482,7 @@ function stepBody(b, x, dt, local, wd, t, predict) {
     }
   }
   if (b.ground) {
-    const s = supportAt(fx0, fx1, b.dy, t);
+    const s = supportAt(fx0, fx1, b.dy, t, solid);
     if (s === null) { b.ground = false; b.vy = 0; } else b.dy = s;
   }
   if (b.ground) {
@@ -1325,14 +1494,15 @@ function stepBody(b, x, dt, local, wd, t, predict) {
       }
     }
   }
-  if (predict && b.ground && !NO_PREDICT) {
+  if (predict && b.ground && !b.veh && !NO_PREDICT) {
     // a friend's jump is still on its way over the network: assume they hop what is right in front of them
     const fx = fx1, reach = speedAtDist(wd) * 0.28;
     let need = false;
+    for (const l of ladders) if (l.base && Math.abs(b.dy - l.base) < 1 && l.wx > fx - 4 && l.wx - fx < reach * 0.5) { need = true; break; }
     if (Math.abs(b.dy) < 1) {
-      for (const o of obstacles) if (o.kind === 'cactus' && o.wx > fx - 4 && o.wx - fx < reach) { need = true; break; }
+      for (const o of obstacles) if ((o.kind === 'cactus' || o.kind === 'bomb') && o.wx > fx - 4 && o.wx - fx < reach) { need = true; break; }
       if (!need) for (const p of pits) if (p.wx > fx - 4 && p.wx - fx < reach * 0.6) { need = true; break; }
-      if (!need) for (const l of ladders) if (l.wx > fx - 4 && l.wx - fx < reach * 0.5) { need = true; break; }
+      if (!need) for (const l of ladders) if (!l.base && l.wx > fx - 4 && l.wx - fx < reach * 0.5) { need = true; break; }
     }
     if (!need) for (const f of foes) { if (f.dead || Math.abs(f.h - b.dy) > 2) continue; const fxw = foeXAt(f, t); if (fxw > fx - 10 && fxw - fx < reach) { need = true; break; } }
     if (need) { b.vy = -JUMP_V; b.ground = false; }
@@ -1343,7 +1513,7 @@ function stepBody(b, x, dt, local, wd, t, predict) {
     b.vy += GRAV * dt;
     b.dy -= b.vy * dt;
     if (b.vy > 0) {
-      const land = landingAt(fx0, fx1, prev, b.dy, t);
+      const land = landingAt(fx0, fx1, prev, b.dy, t, solid);
       if (land !== null) {
         b.dy = land; b.vy = 0; b.ground = true;
         if (local && state === 'play' && meAlive && b.buffer > 0) jump();
@@ -1357,6 +1527,10 @@ function physics(dt, local) { stepBody(dino, dino.x, dt, !!local, dist, gt); }
 
 /* ---------------- Input ---------------- */
 function jump() {
+  if (dino.veh === 'jet') {
+    if (state === 'play' && meAlive) { dino.ft = dino.ft > 150 ? 100 : 205; sfx.jump(); if (inCoop()) sendState('jet'); }
+    return;
+  }
   if (dino.ground && dino.respawnT <= 0 && !dino.climb) {
     dino.vy = -JUMP_V; dino.ground = false; dino.buffer = 0;
     if (state === 'play') {
@@ -1621,8 +1795,9 @@ function startGame() {
   audio();
   ensureDaily();
   reset();
+  setLanes(1); dino.x = dino.tx = LANE;
   state = 'play';
-  show(null);
+  show(null); paintActions();
   daily.c.runsDay++; progress('runsDay', daily.c.runsDay); saveDaily();
   const bonus = touchStreak();
   showBanner('LEVEL 1', levelName(0));
@@ -1657,13 +1832,176 @@ function onLevel(l) {
   sfx.level();
   confetti(REDUCED ? 10 : 40);
   progress('levelRun', l + 1);
-  let sub = levelName(l);
-  if (inCoop() && !meAlive) { reviveMe(true); sub = 'CHECKPOINT · YOU ARE BACK'; }
+  if (boss && !boss.dead && boss.lvl === l - 1) { hudPop('THE ' + BOSS_NAME + ' ESCAPED', '#7a6a8a'); boss = null; }
+  showClear(l);
+  if (inCoop() && !meAlive) reviveMe(true);
   else if (lives < 3) { lives++; hudPop('+1 LIFE', '#ff3d7f'); }
-  showBanner('LEVEL ' + (l + 1), sub);
-  showTip(myChar);
+  if (isBoss(l)) { boss = { lvl: l, max: 30 + 20 * (laneN - 1) + 10 * Math.floor(l / 3), dead: false, enter: 0, hitT: 0, deadT: 0 }; myBossDmg = 0; }
+}
+/* ---------------- Level Clear break: the world stops, stats, a love tip, then the next level ---------------- */
+function showClear(l) {
+  const r = roundBase || { hearts: 0, stomps: 0, score: 0, zaps: 0 };
+  $('clTitle').textContent = 'LEVEL ' + l + ' CLEAR!';
+  const chips = $('clChips'); chips.innerHTML = '';
+  chips.appendChild(chip('♥ ' + (run.hearts - r.hearts)));
+  const kos = (run.stomps - r.stomps) + (run.zaps - r.zaps);
+  if (kos > 0) chips.appendChild(chip(kos + ' KO'));
+  chips.appendChild(chip('+' + Math.max(0, Math.floor(score) - r.score), 'hot'));
+  const t = nextTip(myChar);
+  $('clTipLabel').textContent = t.g === 'girl' ? 'Love tip · for your boyfriend' : 'Love tip · for your girlfriend';
+  $('clTipText').textContent = t.text;
+  $('clNext').textContent = isBoss(l) ? 'Next: BOSS LEVEL · ' + BOSS_NAME : 'Next: Level ' + (l + 1) + ' · ' + levelName(l);
+  $('clCount').textContent = '';
+  $('clear').classList.add('show');
+  clearCard = { l, t: 0, sawPause: false, lastC: 0 };
+  roundBase = { hearts: run.hearts, stomps: run.stomps, score: Math.floor(score), zaps: run.zaps };
+}
+function updateClear(dt) {
+  if (!clearCard) return;
+  clearCard.t += dt;
+  const m = motion(gt);
+  if (m.paused) {
+    clearCard.sawPause = true;
+    const c = Math.ceil(m.rem);
+    $('clCount').textContent = c <= 3 ? 'Get ready… ' + c : 'Next level in ' + c;
+    if (c <= 3 && c !== clearCard.lastC) { clearCard.lastC = c; sfx.tick(); }
+  }
+  if ((clearCard.sawPause && !m.paused) || clearCard.t > PAUSE + 3) endClear();
+}
+function hideClear() { clearCard = null; $('clear').classList.remove('show'); }
+function endClear() {
+  const l = clearCard.l;
+  hideClear();
+  if (state !== 'play') return;
+  sfx.go();
+  if (isBoss(l)) { showBanner('BOSS LEVEL!', BOSS_NAME); if (boss && boss.lvl === l) boss.enter = 0.001; }
+  else showBanner('LEVEL ' + (l + 1), levelName(l));
+}
+/* ---------------- Weapons and the boss ---------------- */
+const bossActive = () => !!(boss && !boss.dead && boss.enter >= 1 && boss.lvl === curLevel);
+function bossHp() {
+  if (!boss) return 0;
+  let d = myBossDmg;
+  if (inCoop()) for (const p of peerList()) if (p.run === room.run && p.bl === boss.lvl) d += p.bd || 0;
+  return Math.max(0, boss.max - d);
+}
+function bombLanded(o) { return !bossActive() || o.wx - dist < bossX() - speed * 0.3; }
+function boom(x, y, n) {
+  puff(x, y, n);
+  for (let i = 0; i < n; i++) part({ k: 'x', x, y, vx: (Math.random() - 0.5) * 260, vy: -60 - Math.random() * 200, g: 420, life: 0.45 + Math.random() * 0.3, s: 6, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 16, color: Math.random() < 0.5 ? '#ffb02e' : '#ff5c3a' });
+}
+function paintActions() {
+  $('blastN').textContent = blasts;
+  $('btnBlast').classList.toggle('empty', blasts <= 0);
+}
+function canAct() { return state === 'play' && meAlive && !(inCoop() && gt <= 0); }
+function spawnRocket(x, y, mine) { rockets.push({ x, y, vx: 760, vy: -40, t: 0, mine }); }
+function fire() {
+  if (!canAct() || fireCd > 0) return;
+  fireCd = 0.3;
+  spawnRocket(dino.x + 52, GROUND - 44 - dino.dy, true);
+  sfx.fire(); buzz(8);
+  if (inCoop()) NET.send('fire', { run: room.run, t: Math.round(gt * 1000) / 1000 });
+}
+function zapFoe(f) {
+  f.dead = true; run.zaps++;
+  const g = 25 * (doubleT > 0 ? 2 : 1);
+  score += g;
+  const fx = foeX(f) - dist;
+  floatText(fx + 20, GROUND - f.h - 50, 'ZAP +' + g, '#d2601a');
+  progress('stompRun', run.stomps + run.zaps);
+  if (inCoop()) NET.send('k', { id: f.id, run: room.run }, true);
+}
+function blast() {
+  if (!canAct() || blasts <= 0) return;
+  blasts--; paintActions();
+  flash = 0.3; shake = REDUCED ? 0 : 0.35;
+  sfx.boom(); buzz([30, 30, 60]);
+  part({ k: 'ring', x: dino.x + 33, y: dinoTop() + 40, life: 0.55, s: 30 });
+  for (const f of foes) { if (f.dead) continue; const fx = foeX(f) - dist; if (fx > -40 && fx < W + 40) { boom(fx + 20, GROUND - f.h - 20, 8); zapFoe(f); } }
+  obstacles = obstacles.filter(o => {
+    const sx = sxOf(o);
+    if ((o.kind === 'cloud' || o.kind === 'bomb') && sx > dino.x - 30 && sx < W + 40) { boom(sx + o.w / 2, GROUND - o.yOff + o.h / 2, 8); return false; }
+    return true;
+  });
+  if (bossActive()) { myBossDmg += 8; boss.hitT = 0.3; }
+  if (inCoop()) NET.send('blast', { run: room.run, t: Math.round(gt * 1000) / 1000 });
+}
+function rocketTarget(r) {
+  if (bossActive()) return { x: bossX(), y: bossY() + 10 };
+  let best = null, bd = 1e9;
+  for (const f of foes) {
+    if (f.dead) continue;
+    const fx = foeX(f) - dist + FOE[0].width / 2, fy = GROUND - f.h - FOE[0].height / 2;
+    if (fx < r.x - 10 || fx > W + 20) continue;
+    const d = Math.hypot(fx - r.x, fy - r.y);
+    if (d < bd) { bd = d; best = { x: fx, y: fy }; }
+  }
+  return best;
+}
+function updateRockets(dt) {
+  if (fireCd > 0) fireCd -= dt;
+  if (fireHeld && fireCd <= 0) fire();
+  for (const r of rockets) {
+    r.t += dt;
+    const tg = rocketTarget(r);
+    if (tg) {
+      const a = Math.atan2(r.vy, r.vx), want = Math.atan2(tg.y - r.y, tg.x - r.x);
+      let d = want - a;
+      while (d > Math.PI) d -= 2 * Math.PI;
+      while (d < -Math.PI) d += 2 * Math.PI;
+      const na = a + Math.max(-8 * dt, Math.min(8 * dt, d));
+      r.vx = Math.cos(na) * 760; r.vy = Math.sin(na) * 760;
+    }
+    r.x += r.vx * dt; r.y += r.vy * dt;
+    if (!REDUCED && Math.random() < 0.7) part({ k: 'p', x: r.x - 10, y: r.y + (Math.random() - 0.5) * 4, vx: -80, vy: (Math.random() - 0.5) * 40, life: 0.25, s: 3 });
+    if (bossActive() && Math.hypot(r.x - bossX(), r.y - bossY()) < 64) {
+      r.dead = true; boom(r.x, r.y, 6);
+      if (r.mine) { myBossDmg++; boss.hitT = 0.12; score += 5 * (doubleT > 0 ? 2 : 1); sfx.hitBoss(); }
+      continue;
+    }
+    for (const f of foes) {
+      if (f.dead) continue;
+      const fx = foeX(f) - dist, top = GROUND - f.h - FOE[0].height + 3;
+      if (r.x > fx - 4 && r.x < fx + FOE[0].width + 4 && r.y > top - 8 && r.y < top + FOE[0].height + 8) { r.dead = true; boom(r.x, r.y, 8); if (r.mine) zapFoe(f); break; }
+    }
+    if (r.t > 1.7 || r.x > W + 60 || r.x < -60) r.dead = true;
+  }
+  rockets = rockets.filter(r => !r.dead);
+}
+function updateBoss(dt) {
+  if (!boss) return;
+  if (boss.hitT > 0) boss.hitT -= dt;
+  if (boss.enter > 0 && boss.enter < 1) boss.enter = Math.min(1, boss.enter + dt / 1.4);
+  if (boss.dead) { boss.deadT += dt; if (boss.deadT > 1.6) boss = null; return; }
+  if (boss.lvl !== curLevel) return;
+  if (boss.enter >= 1 && bossHp() <= 0) bossDefeated();
+}
+function bossDefeated() {
+  boss.dead = true; boss.deadT = 0;
+  run.bosses++;
+  const g = 500 * (doubleT > 0 ? 2 : 1);
+  score += g; coins += 30; run.coins += 30;
+  sfx.finale(); buzz([60, 40, 60, 40, 120]);
+  confetti(REDUCED ? 30 : 120);
+  for (let i = 0; i < 6; i++) boom(bossX() + (Math.random() - 0.5) * 120, bossY() + (Math.random() - 0.5) * 80, 10);
+  showBanner('BOSS DEFEATED!', '+' + g + ' · +30 ♥');
+  // bombs still waiting to fall turn into golden hearts
+  obstacles = obstacles.filter(o => {
+    if (o.kind !== 'bomb' || sxOf(o) < dino.x + 70) return true;
+    hearts.push({ wx: o.wx, yOff: 40 + HEART.height / 2, ph: Math.random() * 6, gone: false, missed: false, gold: true });
+    return false;
+  });
 }
 function loseLife(kind) {
+  if (armor > 0) {
+    armor--; inv = 1.0; flash = 0.1;
+    sfx.shield(); buzz(30);
+    puff(dino.x + 50, GROUND - 40 - dino.dy, 10);
+    floatText(dino.x + 30, dinoTop() - 16, armor ? 'ARMOUR ' + armor : 'ARMOUR GONE', '#3a6a9a');
+    if (inCoop()) sendState('veh');
+    return false;
+  }
   if (shieldOn) {
     shieldOn = false; inv = 1.1; flash = 0.12;
     sfx.shield(); buzz(30);
@@ -1682,7 +2020,11 @@ function loseLife(kind) {
   }
   return true;
 }
-function onHit(o) { o.hit = true; loseLife(o.kind); }
+function onHit(o) {
+  o.hit = true;
+  if (o.kind === 'bomb') { o.exploded = true; boom(sxOf(o) + o.w / 2, GROUND - 20, 14); sfx.boom(); }
+  loseLife(o.kind);
+}
 function fellInPit() {
   dino.dy = 150; dino.vy = 0; dino.ground = false; dino.respawnT = 0.9; dino.climb = null;
   if (shieldOn) { loseLife('pit'); return; }
@@ -1752,6 +2094,7 @@ function pickPower(p) {
   p.gone = true;
   run.power++; daily.c.powerDay++;
   sfx.power();
+  if (VEH_LIST.includes(p.type)) { giveVehicle(p.type); burstHearts(p.wx - dist + 15, GROUND - p.yOff + 15, REDUCED ? 3 : 8); progress('powerDay', daily.c.powerDay); return; }
   if (p.type === 'shield') shieldOn = true;
   if (p.type === 'magnet') magnetT = 8;
   if (p.type === 'double') doubleT = 8;
@@ -1759,8 +2102,28 @@ function pickPower(p) {
   burstHearts(p.wx - dist + 15, GROUND - p.yOff + 15, REDUCED ? 3 : 8, p.type === 'double');
   progress('powerDay', daily.c.powerDay);
 }
-const POWER_WORD = { shield: 'SHIELD ON', magnet: 'HEART MAGNET', double: 'DOUBLE POINTS' };
+const POWER_WORD = { shield: 'SHIELD ON', magnet: 'HEART MAGNET', double: 'DOUBLE POINTS', blast: '+1 BLAST' };
 const POWER_COLOR = { shield: '#2f7fae', magnet: '#ff3d7f', double: '#d29a2e' };
+function giveVehicle(t) {
+  if (t === 'armor') { armor = 3; sfx.shield(); hudPop(VEH_WORD.armor, '#3a6a9a'); if (inCoop()) sendState('veh'); return; }
+  dino.veh = t; dino.vehT = VEH_TIME[t]; dino.ft = 205; dino.climb = null;
+  if (t !== 'jet' && !dino.ground && dino.vy > 0) dino.vy = Math.min(dino.vy, 200);
+  sfx.power(); buzz([20, 20, 20]);
+  hudPop(VEH_WORD[t], t === 'jet' ? '#2f7fae' : t === 'truck' ? '#d2601a' : '#ff3d5a');
+  if (inCoop()) sendState('veh');
+}
+function vehicleOver(was) {
+  inv = Math.max(inv, 1.0);
+  if (state === 'play') { puff(dino.x + 40, GROUND - 20 - dino.dy, 10); if (inCoop()) sendState('veh'); }
+}
+function smash(o) {
+  o.exploded = true;
+  const g = 15 * (doubleT > 0 ? 2 : 1);
+  score += g;
+  boom(sxOf(o) + o.w / 2, GROUND - o.yOff + o.h / 2, 10);
+  floatText(dino.x + 40, dinoTop() - 14, 'SMASH +' + g, '#d2601a');
+  sfx.stomp(); buzz(15);
+}
 function teamHearts() {
   let n = run.hearts;
   if (inCoop()) for (const p of peerList()) if (p.run === room.run && peerHere(p)) n += p.hc || 0;
@@ -1772,23 +2135,28 @@ function teamCheck() {
   if (lvl <= teamLevel) return;
   teamLevel = lvl;
   magnetT = Math.max(magnetT, 6); doubleT = Math.max(doubleT, 6);
+  blasts = Math.min(9, blasts + 1); paintActions();
+  const veh = VEH_LIST[Math.floor(Math.random() * VEH_LIST.length)];
+  giveVehicle(veh);
   sfx.level(); confetti(REDUCED ? 8 : 26);
-  showBanner(inCoop() ? 'TEAM POWER!' : 'LOVE POWER!', 'MAGNET + DOUBLE POINTS');
+  showBanner(inCoop() ? 'TEAM POWER!' : 'LOVE POWER!', VEH_WORD[veh] + ' + 1 BLAST');
 }
 function openChest(c) {
   c.open = true; chestsOpened++;
   const g = 40 * (doubleT > 0 ? 2 : 1);
   score += g; coins += 15; run.coins += 15;
-  const types = ['shield', 'magnet', 'double'], t = types[Math.floor(Math.random() * 3)];
-  if (t === 'shield') shieldOn = true; else if (t === 'magnet') magnetT = Math.max(magnetT, 8); else doubleT = Math.max(doubleT, 8);
+  const types = ['shield', 'magnet', 'double', 'blast', 'bike', 'truck', 'jet', 'armor'], t = types[Math.floor(Math.random() * types.length)];
+  if (VEH_LIST.includes(t)) giveVehicle(t);
+  if (t === 'shield') shieldOn = true; else if (t === 'magnet') magnetT = Math.max(magnetT, 8); else if (t === 'double') doubleT = Math.max(doubleT, 8);
+  else { blasts = Math.min(9, blasts + 1); paintActions(); }
   sfx.gold(); buzz([20, 30, 20]);
   const x = c.wx - dist + 18, y = GROUND - c.h - 24;
   burstHearts(x, y, REDUCED ? 4 : 14, true);
   floatText(x, y - 20, 'TREASURE +' + g, '#b7800a');
-  hudPop('+15 ♥ · ' + POWER_WORD[t], '#d29a2e');
+  if (!VEH_LIST.includes(t)) hudPop('+15 ♥ · ' + POWER_WORD[t], '#d29a2e');
 }
 function gameOver() {
-  hideTip();
+  hideTip(); hideClear();
   state = 'over';
   played = true; store.set('played', true);
   const s = Math.floor(score);
@@ -1802,6 +2170,7 @@ function gameOver() {
   const titles = lastHit === 'cloud' ? ['A grumpy cloud got you', 'That cloud was jealous']
     : lastHit === 'pit' ? ['Into the gap you went', 'Mind the gap!']
     : lastHit === 'foe' ? ['A grumpy puff got you', 'Stomp them next time']
+    : lastHit === 'bomb' ? ['Boom! A bomb got you', 'The Storm King got you']
     : ['Ouch, that cactus won', 'Oops! One more try?', 'So close!'];
   $('oTitle').textContent = titles[Math.floor(Math.random() * titles.length)];
   const gapToBest = prevBest - s;
@@ -1816,6 +2185,8 @@ function gameOver() {
   if (run.stomps > 0) chips.appendChild(chip(plural(run.stomps, 'stomp')));
   if (run.near > 0) chips.appendChild(chip(plural(run.near, 'close call')));
   if (chestsOpened > 0) chips.appendChild(chip(plural(chestsOpened, 'chest')));
+  if (run.zaps > 0) chips.appendChild(chip(run.zaps + ' zapped'));
+  if (run.bosses > 0) chips.appendChild(chip(run.bosses + (run.bosses === 1 ? ' boss' : ' bosses') + ' beaten', 'hot'));
   const m = meters(), prevFar = run.bestDist0 || 0;
   $('oBar').style.width = Math.min(100, prevFar > 0 ? m / prevFar * 100 : 100) + '%';
   $('oReach').textContent = prevFar > 0 && m < prevFar
@@ -1852,6 +2223,7 @@ function checkFoes() {
     let hit = false;
     for (const d of DBOX) if (overlap(dino.x + d.x, t + d.y, d.w, d.h, bx, by, bw, bh)) { hit = true; break; }
     if (!hit) continue;
+    if (dino.veh) { boom(fx + 20, top + 20, 8); zapFoe(f); continue; }
     if (dino.vy > 0 && feet - by < 20) stomp(f);
     else if (inv <= 0) { loseLife('foe'); return; }
   }
@@ -1903,7 +2275,9 @@ function stepWorld(dt) {
     for (const h of hist) { if (h[0] <= gt - 0.11) v = h[1]; else break; }
     viki.dy = v;
   }
-  if (inCoop()) for (const p of peerList()) if (p.body && p.alive && p.run === room.run) stepBody(p.body, p.x, dt, false, dist, gt, true);
+  updateRockets(dt); updateBoss(dt); updateClear(dt);
+  if (dino.veh === 'jet' && meAlive && state === 'play' && fireCd <= 0) fire();   // the jet fires on its own
+  if (boss && boss.dead) obstacles = obstacles.filter(o => o.kind !== 'bomb' || sxOf(o) < dino.x + 70);
   for (const g of gates) if (!g.passed && g.wx + 20 < dist + dino.x + 30) { g.passed = true; if (state === 'play') onLevel(g.lvl); }
   trackPasses();
   if (magnetT > 0 && meAlive) {
@@ -1914,7 +2288,9 @@ function stepWorld(dt) {
     }
   }
   if (meAlive && state === 'play' && dino.respawnT <= 0) {
-    if (inv <= 0) for (const o of obstacles) { if (!o.hit && hitObstacle(o)) { onHit(o); break; } }
+    if (dino.veh) { for (const o of obstacles) { if (o.kind === 'bomb' && !bombLanded(o)) continue; if (!o.hit && !o.exploded && hitObstacle(o)) smash(o); } }
+    else if (inv <= 0) for (const o of obstacles) { if (o.kind === 'bomb' && !bombLanded(o)) continue; if (!o.hit && hitObstacle(o)) { onHit(o); break; } }
+    obstacles = obstacles.filter(o => !o.exploded);
     if (state === 'play' && meAlive && !dino.climb) checkFoes();
   }
   pruneCourse();
@@ -1995,6 +2371,25 @@ function tick(dt) {
   else if (state === 'over' && inCoop()) { if (meAlive) physics(dt, false); }
   updateFx(dt);
 }
+/* ---------------- Action buttons: Fire (homing rockets) and Blast ---------------- */
+function bindAct(id, fn, hold) {
+  const b = $(id);
+  b.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation(); audio();
+    b.classList.add('down'); if (hold) fireHeld = true; fn();
+  });
+  const up = () => { b.classList.remove('down'); if (hold) fireHeld = false; };
+  b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
+  b.addEventListener('contextmenu', e => e.preventDefault());
+}
+bindAct('btnFire', fire, true);
+bindAct('btnBlast', blast, false);
+window.addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'INPUT') return;
+  if (e.code === 'KeyF' || e.code === 'KeyX') { if (!e.repeat) fire(); fireHeld = true; }
+  else if ((e.code === 'KeyB' || e.code === 'KeyC') && !e.repeat) blast();
+});
+window.addEventListener('keyup', e => { if (e.code === 'KeyF' || e.code === 'KeyX') fireHeld = false; });
 /* ---------------- Playing together (up to 5 phones) ---------------- */
 const BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://test.mosquitto.org:8081'];
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -2181,9 +2576,52 @@ function reviveTarget() {
   return t;
 }
 function shareUrl() { return location.href.split('#')[0] + '#' + room.code; }
+const freshBody = () => ({ dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0, climb: null });
+// Friends stand behind you, in roster order; the further back, the further in the past they are drawn
+function layoutPeers() {
+  const ps = peerList().sort((a, b) => a.slot - b.slot);
+  ps.forEach((p, i) => { p.rank = i + 1; p.x = LANE - p.rank * laneGap; });
+}
+const peerDelay = p => p.rank * laneGap / Math.max(SPEED0, speedAtDist(dist));
+function updatePeerViews(dt) {
+  for (const p of peerList()) {
+    if (p.run !== room.run) continue;
+    const td = gt - peerDelay(p);
+    // fire and blast effects show up when the friend's (delayed) runner gets there
+    while (p.fires.length && p.fires[0].t <= td) {
+      const f = p.fires.shift();
+      if (p.alive && f.k === 'fire') spawnRocket(p.x + 52, GROUND - 44 - p.dyShown, false);
+      else if (p.alive) part({ k: 'ring', x: p.x + 33, y: GROUND - 35 - p.dyShown, life: 0.5, s: 30 });
+    }
+    if (td <= 0 || !p.snaps.length) { p.vb = freshBody(); p.vt = Math.max(0, td); p.vfrom = -1e9; p.dyShown = 0; p.corr = 0; continue; }
+    let s = null;
+    for (let i = p.snaps.length - 1; i >= 0; i--) if (p.snaps[i].t <= td) { s = p.snaps[i]; break; }
+    const advance = () => {
+      let n = 0;
+      while (p.vt < td - 1e-4 && n < 120) {
+        const h = Math.min(1 / 120, td - p.vt);
+        p.vt += h;
+        stepBody(p.vb, LANE, h, false, distAt(p.vt), p.vt, p.vt > p.snapGt);
+        n++;
+      }
+    };
+    if (p.vt <= td) advance();
+    if (s && (s.t !== p.vfrom || p.vt > td + 1e-4)) {
+      const old = p.vb.dy;
+      p.vb = Object.assign({}, s.b, { climb: s.b.climb ? Object.assign({}, s.b.climb) : null });
+      p.vt = s.t; p.vfrom = s.t;
+      advance();
+      const jumpBy = old - p.vb.dy;
+      p.corr = Math.abs(jumpBy + p.corr) > 120 ? 0 : p.corr + jumpBy;
+    }
+    p.corr *= Math.exp(-dt * 10);
+    if (Math.abs(p.corr) < 0.3) p.corr = 0;
+    p.dyShown = p.vb.dy + p.corr;
+  }
+}
 function newPeer(id) {
   return { id, name: 'Friend', char: 'mint', outfit: 'berry', slot: 0, x: SLOTS[0], last: Date.now(), alive: true, lives: 3, inv: false, score: 0, rv: 0, rs: 0, run: 0,
-    snapGt: -1e9, lastJumpGt: -99, handled: 0, dyShown: 0, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0, climb: null },
+    snapGt: -1e9, lastJumpGt: -99, handled: 0, dyShown: 0, rank: 1, bl: -1, bd: 0, snaps: [], fires: [], vb: freshBody(), vt: 0, vfrom: -1e9, corr: 0,
     rtc: { pc: null, dc: null, open: false, pend: [], remoteSet: false, tries: 0, lastTry: 0 } };
 }
 function applyRoster(list) {
@@ -2195,11 +2633,12 @@ function applyRoster(list) {
     if (e.id === NET.id) { room.mySlot = i; return; }
     let p = room.peers[e.id];
     if (!p) { p = room.peers[e.id] = newPeer(e.id); if (state !== 'play') sfx.heart(); }
-    p.name = cleanName(e.name) || 'Friend'; p.char = validChar(e.char); p.slot = i; p.x = SLOTS[i];
+    p.name = cleanName(e.name) || 'Friend'; p.char = validChar(e.char); p.slot = i;
   });
   for (const id in room.peers) if (!ids.has(id)) { rtcReset(room.peers[id]); delete room.peers[id]; }
   room.roster = list.slice(0, MAX_PLAYERS).map(e => ({ id: e.id, name: cleanName(e.name) || 'Friend', char: validChar(e.char) }));
   room.inRoster = ids.has(NET.id);
+  layoutPeers();
 }
 
 /* Lobby: pick a runner and a name */
@@ -2298,7 +2737,7 @@ function leaveRoom() {
   NET.close();
   room = null;
   try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
-  state = 'start'; hideToast(); hideTip(); reset();
+  state = 'start'; hideToast(); hideTip(); hideClear(); reset();
   fillStart(); show('ovStart');
 }
 function renderRoom() {
@@ -2348,8 +2787,8 @@ function sendState(kind) {
   if (!inCoop()) return;
   NET.send('st', {
     run: room.run, gt: Math.round(gt * 1000) / 1000, dy: Math.round(dino.dy * 10) / 10, vy: Math.round(dino.vy), g: dino.ground ? 1 : 0, rsp: Math.round(dino.respawnT * 1000) / 1000,
-    cl: dino.climb ? [Math.round(dino.climb.to), Math.round(dino.climb.v)] : 0,
-    alive: meAlive, lives, inv: inv > 0, score: Math.floor(score), outfit, rv, rs: reviveSerial, rto: reviveTo, jk: kind || '', lv: curLevel, hc: run.hearts
+    cl: dino.climb ? [Math.round(dino.climb.to), Math.round(dino.climb.v)] : 0, vh: dino.veh || '', vht: Math.round(dino.vehT * 100) / 100, ft: dino.ft, ar: armor,
+    alive: meAlive, lives, inv: inv > 0, score: Math.floor(score), outfit, rv, rs: reviveSerial, rto: reviveTo, jk: kind || '', lv: curLevel, hc: run.hearts, bl: boss ? boss.lvl : -1, bd: myBossDmg
   }, !!kind);
 }
 function startSync(n) {
@@ -2423,17 +2862,17 @@ function handleMsg(type, m) {
     p.run = +m.run || 0;
     p.alive = !!m.alive; p.lives = clamp(m.lives | 0, 0, 3); p.inv = !!m.inv;
     p.score = clamp(m.score | 0, 0, 1e7); p.outfit = validOutfit(m.outfit); p.rv = clamp(m.rv | 0, 0, 3); p.rs = m.rs | 0;
+    if (p.run === room.run) { p.bl = m.bl | 0; p.bd = clamp(m.bd | 0, 0, 9999); }
     if (p.run === room.run) { const hc = clamp(m.hc | 0, 0, 1e5); if (hc > (p.hc || 0)) { p.hc = hc; if (inCoop()) teamCheck(); } }
     const mg = +m.gt;
     if (p.run === room.run && isFinite(mg) && mg > p.snapGt) {
       p.snapGt = mg;
       if (inCoop() && gt > 0) { const lag = clamp(gt - mg, 0, 3); p.lag = p.lag === undefined ? lag : p.lag + (lag - p.lag) * 0.15; }
       const cl = Array.isArray(m.cl) ? { to: clamp(+m.cl[0] || 0, 0, 800), v: clamp(+m.cl[1] || 0, 0, 5000) } : null;
-      p.body = { dy: clamp(+m.dy || 0, -100, 800), vy: clamp(+m.vy || 0, -2000, 3000), ground: !!m.g, respawnT: clamp(+m.rsp || 0, 0, 2), buffer: 0, climb: cl && cl.v > 0 ? cl : null };
-      if (inCoop() && gt > mg) {
-        let t = mg, n = 0;
-        while (t < gt - 1e-4 && n < 120) { const h = Math.min(1 / 120, gt - t); t += h; stepBody(p.body, p.x, h, false, distAt(t), t, true); n++; }
-      }
+      p.snaps.push({ t: mg, b: { dy: clamp(+m.dy || 0, -100, 800), vy: clamp(+m.vy || 0, -2000, 3000), ground: !!m.g, respawnT: clamp(+m.rsp || 0, 0, 2), buffer: 0, climb: cl && cl.v > 0 ? cl : null,
+        veh: ['bike', 'truck', 'jet'].includes(m.vh) ? m.vh : null, vehT: clamp(+m.vht || 0, 0, 12), ft: clamp(+m.ft || 0, 0, 300) } });
+      p.ar = clamp(m.ar | 0, 0, 3);
+      while (p.snaps.length > 2 && p.snaps[0].t < mg - 3) p.snaps.shift();
       if (m.jk === 'jump') {
         p.lastJumpGt = mg;
         if (inCoop() && state === 'play' && Math.abs(mg - myLastJumpGt) < 0.22) syncJump(p);
@@ -2443,6 +2882,11 @@ function handleMsg(type, m) {
       if (wasAlive && !p.alive && meAlive) { hudPop(p.name.toUpperCase() + ' IS DOWN · GRAB 3 ♥', '#ff3d7f'); sfx.hit(); buzz(50); }
       if (m.rto === NET.id && p.rs > p.handled) { p.handled = p.rs; if (!meAlive) reviveMe(false, p.name); }
     }
+    return;
+  }
+  if (type === 'fire' || type === 'blast') {
+    if (!inCoop() || +m.run !== room.run || !isFinite(+m.t)) return;
+    if (p.fires.length < 40) p.fires.push({ t: +m.t, k: type });
     return;
   }
   if (type === 'k') {
@@ -2479,10 +2923,12 @@ function beginCoopRun(seed, t0Host, runId) {
   room.run = runId; room.t0Host = t0Host;
   if (!room.host) room.offApplied = room.offset;
   room.t0Local = t0Host - (room.host ? 0 : room.offApplied);
-  dino.x = dino.tx = SLOTS[room.mySlot] || SLOTS[0];
+  setLanes(room.roster.length);
+  dino.x = dino.tx = LANE;
   gt = Math.min(0, (Date.now() - room.t0Local) / 1000);
   bestAnnounced = true;
-  for (const p of peerList()) Object.assign(p, { alive: true, lives: 3, rv: 0, rs: 0, handled: 0, score: 0, hc: 0, lag: undefined, dyShown: 0, snapGt: -1e9, lastJumpGt: -99, body: { dy: 0, vy: 0, ground: true, respawnT: 0, buffer: 0, climb: null } });
+  for (const p of peerList()) Object.assign(p, { alive: true, lives: 3, rv: 0, rs: 0, handled: 0, score: 0, hc: 0, lag: undefined, dyShown: 0, snapGt: -1e9, lastJumpGt: -99, bl: -1, bd: 0, snaps: [], fires: [], vb: freshBody(), vt: 0, vfrom: -1e9, corr: 0 });
+  layoutPeers(); hideClear(); paintActions();
   state = 'play'; show(null);
   daily.c.runsDay++; progress('runsDay', daily.c.runsDay); saveDaily();
   const bonus = touchStreak();
@@ -2521,17 +2967,14 @@ function coopTick(dt) {
     let n = 0;
     while (gt < target - 0.0005 && n < 60 && state === 'play') { stepWorld(Math.min(1 / 60, target - gt)); n++; }
   }
-  for (const p of peerList()) {
-    const d = p.body.dy - p.dyShown;
-    p.dyShown += d * Math.min(1, dt * (Math.abs(d) > 70 ? 20 : 30));
-  }
+  updatePeerViews(dt);
   if (state !== 'play') return;
   const anyAlive = peersInRun().some(p => p.alive);
   if (gt > 0 && !meAlive && !anyAlive) { coopEndT += dt; if (coopEndT > 1.4) coopOver(); }
   else coopEndT = 0;
 }
 function coopOver() {
-  state = 'over'; hideTip();
+  state = 'over'; hideTip(); hideClear();
   played = true; store.set('played', true);
   saveFarthest(); saveCoins(); saveDaily();
   const me = Math.floor(score);
@@ -2575,6 +3018,8 @@ function fillCoopOver(fresh) {
   chips.appendChild(chip(plural(revivesGiven, 'revive') + ' by you'));
   chips.appendChild(chip(plural(climbs, 'climb')));
   if (chestsOpened) chips.appendChild(chip(plural(chestsOpened, 'chest')));
+  if (run.zaps) chips.appendChild(chip(run.zaps + ' zapped'));
+  if (run.bosses) chips.appendChild(chip(run.bosses + (run.bosses === 1 ? ' boss' : ' bosses') + ' beaten', 'hot'));
   chips.appendChild(chip('+' + run.coins + ' ♥ earned'));
   $('coReach').textContent = 'Team best: ' + store.get('coopBest', 0) + ' · this run: ' + meters() + ' m';
   const here = peerList().some(peerHere);
@@ -2627,6 +3072,88 @@ function drawRunner(char, x, dy, pose, outfitId, alpha, faceLeft) {
   else ctx.drawImage(img, Math.round(x), top);
   ctx.globalAlpha = 1;
   return top;
+}
+// a runner, possibly riding a vehicle; returns the top of the drawing (for name tags)
+function drawRider(char, x, dy, pose, outfitId, alpha, veh, ar) {
+  const roll = Math.floor(clock * 14) % 2;
+  if (veh === 'bike') {
+    const img = BIKE[roll];
+    const top = drawRunner(char, x + 4, dy + 22, 'b', outfitId, alpha, false);
+    ctx.globalAlpha = alpha; ctx.drawImage(img, Math.round(x - 4), Math.round(GROUND - dy - img.height + 3)); ctx.globalAlpha = 1;
+    return top;
+  }
+  if (veh === 'truck') {
+    const img = TRUCK[roll], tw = Math.round(img.width * 1.35), th = Math.round(img.height * 1.35);
+    const top = drawRunner(char, x - 8, dy + 40, 'stand', outfitId, alpha, false);
+    ctx.globalAlpha = alpha; ctx.drawImage(img, Math.round(x - 30), Math.round(GROUND - dy - th + 4), tw, th); ctx.globalAlpha = 1;
+    return top;
+  }
+  if (veh === 'jet') {
+    const img = JET[roll], jy = Math.round(GROUND - dy - img.height - 10), jx = Math.round(x - 26);
+    ctx.save(); ctx.beginPath(); ctx.rect(x - 40, jy - 120, 200, 120 + 15); ctx.clip();
+    const top = drawRunner(char, x + 8, GROUND - 53 - jy, 'stand', outfitId, alpha, false);
+    ctx.restore();
+    ctx.globalAlpha = alpha; ctx.drawImage(img, jx, jy); ctx.globalAlpha = 1;
+    return top;
+  }
+  const top = drawRunner(char, x, dy, pose, outfitId, alpha, false);
+  if (ar > 0) {
+    ctx.strokeStyle = 'rgba(143,163,184,' + (0.55 + 0.2 * Math.sin(clock * 5)).toFixed(2) + ')'; ctx.lineWidth = 4;
+    ctx.strokeRect(Math.round(x + 10), top + 2, 50, 72);
+    for (let i = 0; i < ar; i++) ctx.drawImage(PU.armor, Math.round(x + 14 + i * 16), top - 16, 14, 14);
+  }
+  return top;
+}
+function drawBomb(o, x, top) {
+  const img = o.parts[0].img;
+  let y = top;
+  if (!bombLanded(o)) {
+    const bx = bossX(), fall = speed * 0.3;
+    if (x > bx - 10) return;                                   // still inside the boss
+    const k = Math.min(1, (bx - x) / Math.max(1, fall));
+    y = (bossY() + 30) + (top - (bossY() + 30)) * k * k;
+  }
+  ctx.drawImage(img, Math.round(x), Math.round(y));
+  if (Math.sin(clock * 20 + o.wx) > 0) { ctx.fillStyle = '#ffe65c'; ctx.fillRect(Math.round(x + 18), Math.round(y - 3), 3, 3); }
+}
+function drawRocket(r) {
+  ctx.save(); ctx.translate(Math.round(r.x), Math.round(r.y)); ctx.rotate(Math.atan2(r.vy, r.vx));
+  ctx.fillStyle = Math.floor(clock * 30) % 2 ? '#ffe65c' : '#ff8a1f'; ctx.fillRect(-18, -3, 8, 6);
+  ctx.fillStyle = r.mine ? '#e9eef7' : '#d7c8ff'; ctx.fillRect(-10, -4, 18, 8);
+  ctx.fillStyle = '#ff3d5a'; ctx.fillRect(8, -3, 5, 6); ctx.fillRect(-10, -7, 5, 3); ctx.fillRect(-10, 4, 5, 3);
+  ctx.restore();
+}
+function drawBoss() {
+  if (!boss || boss.lvl !== curLevel || boss.enter <= 0) return;
+  const e = boss.enter, slide = (1 - e * e) * 320;
+  const cx = bossX() + slide, cy = bossY() + Math.sin(clock * 2) * 8;
+  if (boss.dead) {
+    ctx.globalAlpha = Math.max(0, 1 - boss.deadT / 1.4);
+  }
+  const hit = boss.hitT > 0 && Math.floor(clock * 30) % 2 === 0;
+  ctx.fillStyle = hit ? '#ffffff' : '#3d2f5c'; pixelDisc(cx - 48, cy + 8, 36); pixelDisc(cx + 46, cy + 10, 34); pixelDisc(cx, cy - 12, 52);
+  ctx.fillStyle = hit ? '#ffffff' : '#5a4a82'; pixelDisc(cx - 10, cy - 24, 30);
+  // angry face
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(cx - 34, cy - 10, 21, 15); ctx.fillRect(cx + 10, cy - 10, 21, 15);
+  ctx.fillStyle = '#1d1626'; ctx.fillRect(cx - 25, cy - 7, 9, 9); ctx.fillRect(cx + 16, cy - 7, 9, 9);
+  ctx.fillRect(cx - 37, cy - 19, 9, 6); ctx.fillRect(cx - 28, cy - 16, 9, 6); ctx.fillRect(cx - 19, cy - 13, 6, 6);
+  ctx.fillRect(cx + 28, cy - 19, 9, 6); ctx.fillRect(cx + 19, cy - 16, 9, 6); ctx.fillRect(cx + 13, cy - 13, 6, 6);
+  ctx.fillRect(cx - 15, cy + 16, 30, 6); ctx.fillRect(cx - 21, cy + 22, 6, 6); ctx.fillRect(cx + 15, cy + 22, 6, 6);
+  // crown
+  ctx.fillStyle = '#ffc83d'; ctx.fillRect(cx - 27, cy - 66, 54, 15);
+  for (let i = 0; i < 4; i++) ctx.fillRect(cx - 27 + i * 16, cy - 78, 7, 12);
+  ctx.fillStyle = '#ff4d7d'; ctx.fillRect(cx - 4, cy - 63, 8, 8);
+  // rain under the king
+  ctx.fillStyle = '#7fb6ff';
+  for (let i = 0; i < 6; i++) { const ry = (clock * 120 + i * 17) % 50; ctx.fillRect(Math.round(cx - 60 + i * 24), Math.round(cy + 40 + ry), 3, 8); }
+  ctx.globalAlpha = 1;
+  if (!boss.dead) {
+    const hp = bossHp() / boss.max, bw = 150;
+    ctx.fillStyle = 'rgba(30,10,40,0.6)'; ctx.fillRect(Math.round(cx - bw / 2 - 3), Math.round(cy + 98), bw + 6, 12);
+    ctx.fillStyle = hp > 0.5 ? '#3ccf6e' : hp > 0.25 ? '#ffc83d' : '#ff4d4d'; ctx.fillRect(Math.round(cx - bw / 2), Math.round(cy + 101), Math.round(bw * hp), 6);
+    ctx.font = '8px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
+    ctx.fillText(BOSS_NAME, cx, Math.round(cy + 124));
+  }
 }
 function pill(text, x, y, color) {
   ctx.font = '9px "Press Start 2P", monospace';
@@ -2708,12 +3235,12 @@ function drawPlat(p, pal) {
   ctx.fillRect(x, y + 12, w, 3);
 }
 function drawLadder(l, pal) {
-  const x = Math.round(l.wx - dist), top = Math.round(GROUND - l.h);
+  const x = Math.round(l.wx - dist), top = Math.round(GROUND - l.h), bot = GROUND - (l.base || 0), hh = bot - top;
   if (x > W + 10 || x + l.w < -10) return;
   ctx.fillStyle = '#8a5a34';
-  ctx.fillRect(x + 6, top, 6, l.h); ctx.fillRect(x + l.w - 12, top, 6, l.h);
+  ctx.fillRect(x + 6, top, 6, hh); ctx.fillRect(x + l.w - 12, top, 6, hh);
   ctx.fillStyle = '#c48a54';
-  for (let y = top + 12; y < GROUND - 4; y += 21) ctx.fillRect(x + 6, y, l.w - 12, 5);
+  for (let y = top + 12; y < bot - 4; y += 21) ctx.fillRect(x + 6, y, l.w - 12, 5);
   ctx.fillStyle = '#ffd35c';
   if (Math.sin(clock * 6) > 0) { ctx.fillRect(x + l.w / 2 - 6, top - 18, 12, 6); ctx.fillRect(x + l.w / 2 - 3, top - 24, 6, 6); }
 }
@@ -2854,7 +3381,7 @@ function draw() {
     ctx.fillStyle = '#ff5c93'; ctx.fillRect(x - 6, GROUND - 186, 132, 27);
     ctx.fillStyle = '#c42e68'; ctx.fillRect(x - 6, GROUND - 162, 132, 3);
     ctx.font = '9px "Press Start 2P", monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
-    ctx.fillText('LEVEL ' + (gte.lvl + 1), x + 60, GROUND - 168);
+    ctx.fillText(isBoss(gte.lvl) ? 'BOSS!' : 'LEVEL ' + (gte.lvl + 1), x + 60, GROUND - 168);
     ctx.fillStyle = '#ffd35c'; ctx.fillRect(x + 3, GROUND - 198, 3, 12); ctx.fillRect(x + 6, GROUND - 198, 9, 6);
   }
   for (const s of signs) drawSign(s);
@@ -2890,6 +3417,7 @@ function draw() {
     const x = sxOf(o);
     if (x > W + 30) continue;
     const top = GROUND - o.yOff + (o.kind === 'cloud' ? bobOf(o.ph, 3, 3) : 0);
+    if (o.kind === 'bomb') { drawBomb(o, x, top); continue; }
     for (const p of o.parts) ctx.drawImage(p.img, Math.round(x + p.ox), Math.round(top + p.oy));
     if (o.kind === 'cloud') {
       ctx.fillStyle = '#7fb6ff';
@@ -2911,8 +3439,10 @@ function draw() {
     else { ctx.save(); ctx.translate(Math.round(x) + img.width, top); ctx.scale(-1, 1); ctx.drawImage(img, 0, 0); ctx.restore(); }
   }
 
+  drawBoss();
   const coop = inCoop();
   const others = coop ? peerList().filter(p => p.run === room.run) : [];
+  const pausedNow = state === 'play' && gt > 0 && motion(gt).paused;
   const shadowAt = (x, dy) => { if (dy < -2 || dy > 6) return; ctx.fillRect(Math.round(x + 10), GROUND + 3, 40, 3); };
   ctx.fillStyle = 'rgba(80,20,60,0.16)';
   shadowAt(dino.x, dino.dy);
@@ -2928,24 +3458,24 @@ function draw() {
   }
   const tops = {};
   for (const p of others) {
-    const ghost = !p.alive, gone = !peerHere(p), pb = p.body;
-    const pose = ghost ? 'stand' : (pb.climb || !pb.ground) ? 'jump' : state === 'play' && gt > 0 ? (Math.floor(dist / 28) % 2 ? 'a' : 'b') : 'stand';
+    const ghost = !p.alive, gone = !peerHere(p), pb = p.vb;
+    const pose = ghost ? 'stand' : (pb.climb || !pb.ground) ? 'jump' : state === 'play' && gt > 0 && !pausedNow ? (Math.floor(dist / 28) % 2 ? 'a' : 'b') : 'stand';
     const alpha = gone ? 0.25 : ghost ? 0.4 : (p.inv && Math.floor(clock * 10) % 2 === 0 ? 0.35 : 1);
     const pdy = ghost ? 150 + Math.sin(clock * 3 + p.slot) * 6 : p.dyShown;
-    tops[p.id] = drawRunner(p.char, p.x, pdy, pose, p.outfit, alpha, false);
+    tops[p.id] = drawRider(p.char, p.x, pdy, pose, p.outfit, alpha, ghost ? null : pb.veh, ghost ? 0 : p.ar || 0);
     if (!ghost && pb.respawnT > 0) bubble(p.x, pdy);
   }
   const myChar0 = myChar;
   let myPose = 'stand';
   if (state === 'dying' || (state === 'over' && !coop)) myPose = 'hurt';
   else if (!dino.ground || dino.climb) myPose = 'jump';
-  else if (state === 'play' && meAlive && !(coop && gt <= 0)) myPose = Math.floor(dist / 28) % 2 ? 'a' : 'b';
+  else if (state === 'play' && meAlive && !(coop && gt <= 0) && !pausedNow) myPose = Math.floor(dist / 28) % 2 ? 'a' : 'b';
   const ghostMe = coop && !meAlive;
   let myAlpha = 1;
   if (ghostMe) myAlpha = 0.4;
   else if (inv > 0 && state === 'play' && Math.floor(inv * 10) % 2 === 0) myAlpha = 0.35;
   const myDy = ghostMe ? 150 + Math.sin(clock * 3) * 6 : dino.dy;
-  const mytop = drawRunner(myChar0, dino.x, myDy, myPose, outfit, myAlpha, false);
+  const mytop = drawRider(myChar0, dino.x, myDy, myPose, outfit, myAlpha, ghostMe ? null : dino.veh, ghostMe ? 0 : armor);
   ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
   if (!ghostMe && dino.respawnT > 0) bubble(dino.x, dino.dy);
 
@@ -2987,10 +3517,12 @@ function draw() {
     miniHearts(dino.x + 30, mytop - 26, best);
   }
 
+  for (const r of rockets) drawRocket(r);
   for (const p of parts) {
     const a = Math.max(0, 1 - p.age / p.life);
     ctx.globalAlpha = a;
-    if (p.k === 'h' || p.k === 'g') ctx.drawImage(p.k === 'g' ? GOLD : HEART, p.x, p.y, HEART.width * p.s, HEART.height * p.s);
+    if (p.k === 'ring') { ctx.strokeStyle = '#ffd35c'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(p.x, p.y, p.s + p.age * 900, 0, Math.PI * 2); ctx.stroke(); }
+    else if (p.k === 'h' || p.k === 'g') ctx.drawImage(p.k === 'g' ? GOLD : HEART, p.x, p.y, HEART.width * p.s, HEART.height * p.s);
     else if (p.k === 'p') { ctx.fillStyle = n > 0.5 ? '#d9c8ef' : '#ffffff'; ctx.fillRect(p.x, p.y, p.s, p.s); }
     else { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); }
   }
@@ -3088,6 +3620,8 @@ function drawHudInner(pal) {
     if (shieldOn) icon(PU.shield, null);
     if (magnetT > 0) icon(PU.magnet, magnetT / 8);
     if (doubleT > 0) icon(PU.double, doubleT / 8);
+    if (dino.veh) icon(PU[dino.veh], dino.vehT / VEH_TIME[dino.veh]);
+    if (armor > 0) icon(PU.armor, armor / 3);
   }
   ctx.fillStyle = pal.hud;
   ctx.textAlign = 'right';
@@ -3122,7 +3656,6 @@ function drawHudInner(pal) {
     });
   }
 }
-function lvStart(l) { return l < LV_STARTS.length ? LV_STARTS[l] : 39000 + (l - 4) * 15000; }
 function drawBanner(cy) {
   if (!banner) return;
   const t = banner.t;
@@ -3214,7 +3747,11 @@ window.__rty = {
     for (const f of foes) { if (f.dead || Math.abs(f.h - dino.dy) > 2) continue; const x = foeXAt(f, gt); if (x > fx - 10) d = Math.min(d, x - fx); }
     return { d, ground: dino.ground, speed };
   },
-  lag() { return peerList().map(p => Math.round((p.lag || 0) * 1000)); }
+  lag() { return peerList().map(p => Math.round((p.lag || 0) * 1000)); },
+  fire() { fire(); }, blast() { blast(); }, ride(t) { giveVehicle(t); },
+  boss() { return boss ? { lvl: boss.lvl, hp: bossHp(), max: boss.max, dead: boss.dead, enter: boss.enter, active: bossActive() } : null; },
+  timeAt(d) { return realTimeAtDist(d); }, paused() { return motion(gt); },
+  views() { return peerList().map(p => ({ name: p.name, x: p.x, rank: p.rank, dy: Math.round(p.dyShown), veh: p.vb.veh, snaps: p.snaps.length })); }
 };
 
 paintSound();
